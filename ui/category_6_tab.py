@@ -20,7 +20,7 @@ class Category6Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category6Calculator(self.data_service)
-        self.carbonate_rows = # Хранилище для динамических строк сырья
+        self.carbonate_rows = [] # Хранилище для динамических строк сырья
         self._init_ui()
 
     def _init_ui(self):
@@ -136,7 +136,7 @@ class Category6Tab(QWidget):
                 if not self.carbonate_rows:
                     raise ValueError("Добавьте хотя бы один вид карбонатного сырья.")
                 
-                carbonates_data =
+                carbonates_data = []
                 for row in self.carbonate_rows:
                     name = row['combo'].currentText()
                     mass_str = row['input'].text().replace(',', '.')

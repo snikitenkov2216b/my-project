@@ -20,7 +20,7 @@ class Category9Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category9Calculator(self.data_service)
-        self.raw_material_rows = # Хранилище для динамических строк сырья
+        self.raw_material_rows = [] # Хранилище для динамических строк сырья
         self._init_ui()
 
     def _init_ui(self):
@@ -96,7 +96,7 @@ class Category9Tab(QWidget):
             if not self.raw_material_rows:
                 raise ValueError("Добавьте хотя бы один вид сырья.")
             
-            materials_data =
+            materials_data = []
             for row in self.raw_material_rows:
                 name = row['combo'].currentText()
                 mass_str = row['mass_input'].text().replace(',', '.')

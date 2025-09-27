@@ -5,7 +5,7 @@
 import sys
 
 # Импорт основных классов из библиотеки PyQt6 для создания GUI.
-# QApplication управляет жизненным циклом приложения.
+# QApplication управляет жизненным
 from PyQt6.QtWidgets import QApplication
 
 # Импорт класса главного окна из нашего пакета ui.
@@ -15,6 +15,7 @@ from ui.main_window import MainWindow
 # Импорт сервиса данных из модуля data_models.
 # Это "Модель" (Model), предоставляющая доступ ко всем табличным данным.
 from data_models import DataService
+
 
 def main():
     """

@@ -33,7 +33,7 @@ class Category5Calculator:
         # как и для всех остальных материалов. При необходимости, логику можно расширить.
         if not data or 'W_C_ut' not in data:
             raise ValueError(f"Данные о содержании углерода для '{material_name}' не найдены в таблице 1.1.")
-        return data
+        return data['W_C_ut']
 
     def calculate_emissions(self, raw_materials: list, fuels: list, main_product: dict, by_products: list) -> float:
         """

@@ -22,9 +22,9 @@ class Category5Tab(QWidget):
         self.calculator = Category5Calculator(self.data_service)
         
         # Списки для хранения ссылок на виджеты динамических строк
-        self.raw_material_rows =
-        self.fuel_rows =
-        self.by_product_rows =
+        self.raw_material_rows = []
+        self.fuel_rows = []
+        self.by_product_rows = []
 
         self._init_ui()
 
@@ -148,7 +148,7 @@ class Category5Tab(QWidget):
         try:
             # Сбор данных из динамических строк
             def collect_data(storage_list, key_name):
-                items =
+                items = []
                 for row in storage_list:
                     name = row['combo'].currentText()
                     value_str = row['input'].text().replace(',', '.')

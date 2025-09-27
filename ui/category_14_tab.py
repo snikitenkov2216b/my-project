@@ -1,5 +1,5 @@
-# ui/category_12_tab.py - Виджет вкладки для расчетов по Категории 12.
-# Реализует динамический интерфейс для метода углеродного баланса в нефтехимии.
+# ui/category_14_tab.py - Виджет вкладки для расчетов по Категории 14.
+# Реализует динамический интерфейс для метода углеродного баланса в черной металлургии.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -10,20 +10,20 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt
 
 from data_models import DataService
-from calculations.category_12 import Category12Calculator
+from calculations.category_14 import Category14Calculator
 
-class Category12Tab(QWidget):
+class Category14Tab(QWidget):
     """
-    Класс виджета-вкладки для Категории 12 "Нефтехимическое производство".
+    Класс виджета-вкладки для Категории 14 "Черная металлургия".
     """
     def __init__(self, data_service: DataService, parent=None):
         super().__init__(parent)
         self.data_service = data_service
-        self.calculator = Category12Calculator(self.data_service)
+        self.calculator = Category14Calculator(self.data_service)
         
-        # Списки для хранения ссылок на виджеты динамических строк
         self.raw_material_rows = []
-        self.primary_product_rows = []
+        self.fuel_rows = []
+        self.product_rows = []
         self.by_product_rows = []
 
         self._init_ui()
@@ -39,30 +39,38 @@ class Category12Tab(QWidget):
         main_layout.addWidget(scroll_area)
 
         # --- Входящие потоки ---
-        inputs_group = QGroupBox("Входящие потоки (Сырье)")
+        inputs_group = QGroupBox("Входящие потоки")
         inputs_layout = QVBoxLayout()
+        
+        inputs_layout.addWidget(QLabel("Сырье, материалы, восстановители:"))
         self.raw_materials_layout = QVBoxLayout()
         add_raw_material_button = QPushButton("Добавить сырье")
         add_raw_material_button.clicked.connect(self._add_raw_material_row)
         inputs_layout.addLayout(self.raw_materials_layout)
         inputs_layout.addWidget(add_raw_material_button, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        inputs_layout.addWidget(QLabel("Топливо:"))
+        self.fuels_layout = QVBoxLayout()
+        add_fuel_button = QPushButton("Добавить топливо")
+        add_fuel_button.clicked.connect(self._add_fuel_row)
+        inputs_layout.addLayout(self.fuels_layout)
+        inputs_layout.addWidget(add_fuel_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        
         inputs_group.setLayout(inputs_layout)
         form_container_layout.addWidget(inputs_group)
 
         # --- Выходящие потоки ---
-        outputs_group = QGroupBox("Выходящие потоки (Продукция)")
+        outputs_group = QGroupBox("Выходящие потоки")
         outputs_layout = QVBoxLayout()
 
-        # Секция основной продукции
         outputs_layout.addWidget(QLabel("Основная продукция:"))
-        self.primary_products_layout = QVBoxLayout()
-        add_primary_product_button = QPushButton("Добавить основную продукцию")
-        add_primary_product_button.clicked.connect(self._add_primary_product_row)
-        outputs_layout.addLayout(self.primary_products_layout)
-        outputs_layout.addWidget(add_primary_product_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.products_layout = QVBoxLayout()
+        add_product_button = QPushButton("Добавить основную продукцию")
+        add_product_button.clicked.connect(self._add_product_row)
+        outputs_layout.addLayout(self.products_layout)
+        outputs_layout.addWidget(add_product_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # Секция сопутствующей продукции
-        outputs_layout.addWidget(QLabel("Сопутствующая продукция:"))
+        outputs_layout.addWidget(QLabel("Сопутствующая продукция и отходы:"))
         self.by_products_layout = QVBoxLayout()
         add_by_product_button = QPushButton("Добавить сопутствующий продукт")
         add_by_product_button.clicked.connect(self._add_by_product_row)
@@ -81,17 +89,12 @@ class Category12Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         form_container_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-    def _create_dynamic_row(self, placeholder_text, target_layout, storage_list):
-        """Создает одну динамическую строку для ввода вещества."""
+    def _create_dynamic_row(self, placeholder_text, target_layout, storage_list, item_list):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         
         combo = QComboBox()
-        # Объединяем вещества из таблиц 12.1 и 1.1
-        substances_12_1 = self.data_service.get_petrochemical_substance_names_table_12_1()
-        substances_1_1 = self.data_service.get_fuels_table_1_1()
-        all_substances = sorted(list(set(substances_12_1 + substances_1_1)))
-        combo.addItems(all_substances)
+        combo.addItems(item_list)
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
@@ -110,20 +113,26 @@ class Category12Tab(QWidget):
         remove_button.clicked.connect(lambda: self._remove_row(row_data, target_layout, storage_list))
 
     def _remove_row(self, row_data, target_layout, storage_list):
-        """Удаляет строку из интерфейса и из списка хранения."""
         row_widget = row_data['widget']
         target_layout.removeWidget(row_widget)
         row_widget.deleteLater()
         storage_list.remove(row_data)
 
     def _add_raw_material_row(self):
-        self._create_dynamic_row("Расход сырья, т", self.raw_materials_layout, self.raw_material_rows)
+        items = self.data_service.get_metallurgy_material_names_table_14_1() + self.data_service.get_fuels_table_1_1()
+        self._create_dynamic_row("Расход, т", self.raw_materials_layout, self.raw_material_rows, sorted(list(set(items))))
 
-    def _add_primary_product_row(self):
-        self._create_dynamic_row("Выход продукции, т", self.primary_products_layout, self.primary_product_rows)
+    def _add_fuel_row(self):
+        items = self.data_service.get_fuels_table_1_1()
+        self._create_dynamic_row("Расход, т или тыс. м3", self.fuels_layout, self.fuel_rows, items)
+
+    def _add_product_row(self):
+        items = self.data_service.get_metallurgy_material_names_table_14_1() + self.data_service.get_fuels_table_1_1()
+        self._create_dynamic_row("Выход, т", self.products_layout, self.product_rows, sorted(list(set(items))))
 
     def _add_by_product_row(self):
-        self._create_dynamic_row("Выход продукции, т", self.by_products_layout, self.by_product_rows)
+        items = self.data_service.get_metallurgy_material_names_table_14_1() + self.data_service.get_fuels_table_1_1()
+        self._create_dynamic_row("Выход, т или тыс. м3", self.by_products_layout, self.by_product_rows, sorted(list(set(items))))
 
     def _perform_calculation(self):
         try:
@@ -138,14 +147,15 @@ class Category12Tab(QWidget):
                 return items
 
             raw_materials = collect_data(self.raw_material_rows, 'consumption')
-            primary_products = collect_data(self.primary_product_rows, 'production')
+            fuels = collect_data(self.fuel_rows, 'consumption')
+            products = collect_data(self.product_rows, 'production')
             by_products = collect_data(self.by_product_rows, 'production')
 
-            if not raw_materials and not primary_products and not by_products:
+            if not raw_materials and not fuels and not products and not by_products:
                 raise ValueError("Необходимо добавить хотя бы один материальный поток.")
 
-            co2_emissions = self.calculator.calculate_emissions_by_balance(
-                raw_materials, primary_products, by_products
+            co2_emissions = self.calculator.calculate_emissions(
+                raw_materials, fuels, products, by_products
             )
 
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")

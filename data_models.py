@@ -1,6 +1,7 @@
 # data_models.py - Данные таблиц из методики расчета выбросов.
 # Комментарии на русском. Поддержка UTF-8.
 
+# ... (весь предыдущий код TABLE_1_1 ... TABLE_18_1 остается без изменений) ...
 # Таблица 1.1: Коэффициенты перевода, EF_CO2, W_C по видам топлива
 # Структура: dict с ключом 'Вид топлива': {'unit': str, 'k_ut': float, 'NCV': float, 'EF_CO2_ut': float, 'EF_CO2_TJ': float, 'W_C_ut': float, 'W_C_TJ': float}
 TABLE_1_1 = {
@@ -239,6 +240,40 @@ TABLE_18_1 = [
     {'fuel': 'Прочие горючие отходы производства (т у.т.)', 'EF_CO2_t': 4.19, 'EF_CO2_TJ': None, 'EF_CO2_ut': None, 'rho': None},
 ]
 
+
+# Таблица 19.1: Коэффициенты выбросов CO2 для дорожного хозяйства
+# Структура: dict, вложенные dict
+TABLE_19_1 = {
+    "Автомобильные дороги федерального значения": {
+        "Содержание": {"I": 43.73, "II": 25.00, "III": 16.22, "IV": 14.09, "V": 11.65},
+        "Ремонт": {"I": 533.28, "II": 271.70, "III": 195.84, "IV": 190.16, "V": 52.05},
+        "Капитальный ремонт": {"I": 1556.92, "II": 713.82, "III": 544.34, "IV": 526.10, "V": 175.33},
+        "Строительство": {"I": 2958.14, "II": 1356.26, "III": 1034.25, "IV": 999.6, "V": 333.13},
+    },
+    "Автомобильные дороги регионального или межмуниципального, местного значения": {
+        "Содержание": {"I": 37.38, "II": 21.37, "III": 7.72, "IV": 4.28, "V": 2.94},
+        "Ремонт": {"I": 419.91, "II": 177.58, "III": 128.00, "IV": 98.02, "V": 26.83},
+        "Капитальный ремонт": {"I": 1541.50, "II": 679.83, "III": 477.49, "IV": 290.66, "V": 96.87},
+        "Строительство": {"I": 2293.13, "II": 1004.64, "III": 808.01, "IV": 740.44, "V": 246.76},
+    }
+}
+
+# Таблица 20.5: Классификация ОРО и поправочные коэффициенты для метана (MCF)
+TABLE_20_5 = [
+    {'type': 'Управляемый - анаэробный', 'MCF': 1.0},
+    {'type': 'Управляемый - полуанаэробный', 'MCF': 0.5},
+    {'type': 'Неуправляемый - глубокий (> 5 м отходов)', 'MCF': 0.8},
+    {'type': 'Неуправляемый - неглубокий (< 5 м отходов)', 'MCF': 0.4},
+    {'type': 'ОРО вне категории', 'MCF': 0.6},
+]
+
+# Таблица 21.1: Коэффициенты выбросов CH4 и N2O при биологической обработке отходов
+TABLE_21_1 = [
+    {'type': 'Компостирование', 'EF_CH4_wet': 4, 'EF_N2O_wet': 0.3},
+    {'type': 'Анаэробное сбраживание', 'EF_CH4_wet': 1, 'EF_N2O_wet': 0}
+]
+
+
 class DataService:
     """
     Класс-сервис для предоставления централизованного доступа ко всем табличным данным.
@@ -246,9 +281,6 @@ class DataService:
     методы для их получения, а также вспомогательные методы для UI.
     """
     def __init__(self):
-        """
-        Конструктор класса. Инициализирует все таблицы как атрибуты экземпляра.
-        """
         self.table_1_1 = TABLE_1_1
         self.table_1_2 = TABLE_1_2
         self.table_2_1 = TABLE_2_1
@@ -262,86 +294,124 @@ class DataService:
         self.table_14_1 = TABLE_14_1
         self.table_16_1 = TABLE_16_1
         self.table_18_1 = TABLE_18_1
+        self.table_19_1 = TABLE_19_1
+        self.table_20_5 = TABLE_20_5
+        self.table_21_1 = TABLE_21_1
 
-    # --- Методы-геттеры для UI и модулей расчетов ---
+    # ... (все предыдущие методы-геттеры остаются без изменений) ...
 
     def get_fuels_table_1_1(self):
-        """Возвращает список наименований топлива из Таблицы 1.1."""
         return list(self.table_1_1.keys())
 
     def get_fuel_data_table_1_1(self, fuel_name):
-        """Возвращает данные для конкретного вида топлива из Таблицы 1.1."""
         return self.table_1_1.get(fuel_name)
 
     def get_density_data_table_1_2(self, conditions_index=2):
-        """Возвращает данные о плотности газов из Таблицы 1.2.
-        По умолчанию для стандартных условий (20 °C).
-        """
-        # Индекс 2 соответствует N=3 (20 °C)
         return self.table_1_2[conditions_index]
 
     def get_flare_gas_types_table_2_1(self):
-        """Возвращает список типов газов для сжигания в факелах из Таблицы 2.1."""
         return [item['type'] for item in self.table_2_1]
         
     def get_flare_gas_data_table_2_1(self, gas_type):
-        """Возвращает данные для конкретного газа из Таблицы 2.1."""
         for item in self.table_2_1:
             if item['type'] == gas_type:
                 return item
         return None
 
     def get_fugitive_gas_types_table_3_1(self):
-        """Возвращает список типов газов для фугитивных выбросов из Таблицы 3.1."""
         return [item['type'] for item in self.table_3_1]
 
     def get_fugitive_gas_data_table_3_1(self, gas_type):
-        """Возвращает данные для конкретного газа из Таблицы 3.1."""
         for item in self.table_3_1:
             if item['type'] == gas_type:
                 return item
         return None
 
     def get_carbonate_formulas_table_6_1(self):
-        """Возвращает список формул карбонатов из Таблицы 6.1."""
         return [item['formula'] for item in self.table_6_1]
 
     def get_carbonate_data_table_6_1(self, formula):
-        """Возвращает данные для карбоната по его формуле из Таблицы 6.1."""
         for item in self.table_6_1:
             if item['formula'] == formula:
                 return item
         return None
         
     def get_oxide_formulas_table_6_2(self):
-        """Возвращает список формул оксидов из Таблицы 6.2."""
         return [item['formula'] for item in self.table_6_2]
 
     def get_oxide_data_table_6_2(self, formula):
-        """Возвращает данные для оксида по его формуле из Таблицы 6.2."""
         for item in self.table_6_2:
             if item['formula'] == formula:
                 return item
         return None
 
     def get_glass_carbonate_formulas_table_8_1(self):
-        """Возвращает список формул карбонатов для производства стекла из Таблицы 8.1."""
         return [item['formula'] for item in self.table_8_1]
 
     def get_glass_carbonate_data_table_8_1(self, formula):
-        """Возвращает данные для карбоната по его формуле из Таблицы 8.1."""
         for item in self.table_8_1:
             if item['formula'] == formula:
                 return item
         return None
         
     def get_ammonia_processes_table_11_1(self):
-        """Возвращает список процессов из Таблицы 11.1."""
         return [item['process'] for item in self.table_11_1]
 
     def get_ammonia_process_data_table_11_1(self, process_name):
-        """Возвращает данные для конкретного процесса из Таблицы 11.1."""
         for item in self.table_11_1:
             if item['process'] == process_name:
+                return item
+        return None
+        
+    def get_petrochemical_substance_names_table_12_1(self):
+        return [item['substance'] for item in self.table_12_1]
+
+    def get_petrochemical_substance_data_table_12_1(self, substance_name):
+        for item in self.table_12_1:
+            if item['substance'] == substance_name:
+                return item
+        return None
+
+    def get_metallurgy_material_names_table_14_1(self):
+        return [item['material'] for item in self.table_14_1]
+
+    def get_metallurgy_material_data_table_14_1(self, material_name):
+        for item in self.table_14_1:
+            if item['material'] == material_name:
+                return item
+        return None
+        
+    def get_aluminium_tech_data_table_16_1(self, technology):
+        for item in self.table_16_1:
+            if item['technology'] == technology:
+                return item
+        return None
+
+    def get_transport_fuel_data_table_18_1(self, fuel_name):
+        for item in self.table_18_1:
+            if item['fuel'] == fuel_name:
+                return item
+        return None
+
+    def get_road_types_table_19_1(self):
+        return list(self.table_19_1.keys())
+
+    def get_road_stages_table_19_1(self):
+        # Этапы одинаковы для всех типов дорог
+        return list(self.table_19_1["Автомобильные дороги федерального значения"].keys())
+
+    def get_road_work_data_table_19_1(self, road_type, stage, category):
+        try:
+            ef = self.table_19_1[road_type][stage][category]
+            return {'EF': ef}
+        except KeyError:
+            return None
+            
+    def get_biological_treatment_types_table_21_1(self):
+        return [item['type'] for item in self.table_21_1]
+
+    def get_biological_treatment_data_table_21_1(self, treatment_type):
+        for item in self.table_21_1:
+            if item['type'] == treatment_type:
                 return item
         return None

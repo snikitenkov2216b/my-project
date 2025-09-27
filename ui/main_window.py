@@ -18,7 +18,16 @@ from ui.category_8_tab import Category8Tab
 from ui.category_9_tab import Category9Tab
 from ui.category_10_tab import Category10Tab
 from ui.category_11_tab import Category11Tab
-from ui.category_12_tab import Category12Tab # <-- ДОБАВЛЕН ИМПОРТ
+from ui.category_12_tab import Category12Tab
+from ui.category_13_tab import Category13Tab
+from ui.category_14_tab import Category14Tab
+from ui.category_15_tab import Category15Tab
+from ui.category_16_tab import Category16Tab
+from ui.category_17_tab import Category17Tab
+from ui.category_18_tab import Category18Tab
+from ui.category_19_tab import Category19Tab
+from ui.category_20_tab import Category20Tab
+
 
 class MainWindow(QMainWindow):
     """
@@ -54,6 +63,12 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(Category9Tab(self.data_service), "Кат. 9: Производство керамики")
         self.tabs.addTab(Category10Tab(self.data_service), "Кат. 10: Производство аммиака")
         self.tabs.addTab(Category11Tab(self.data_service), "Кат. 11: Хим. пром. (N2O)")
-        
-        # Вкладка для Категории 12 <-- ДОБАВЛЕН НОВЫЙ БЛОК
         self.tabs.addTab(Category12Tab(self.data_service), "Кат. 12: Нефтехимия")
+        self.tabs.addTab(Category13Tab(self.data_service), "Кат. 13: Фтор-вещества")
+        self.tabs.addTab(Category14Tab(self.data_service), "Кат. 14: Черная металлургия")
+        self.tabs.addTab(Category15Tab(self.data_service), "Кат. 15: Ферросплавы")
+        self.tabs.addTab(Category16Tab(self.data_service), "Кат. 16: Алюминий")
+        self.tabs.addTab(Category17Tab(self.data_service), "Кат. 17: Прочие процессы")
+        self.tabs.addTab(Category18Tab(self.data_service), "Кат. 18: Транспорт")
+        self.tabs.addTab(Category19Tab(self.data_service), "Кат. 19: Дорожное хозяйство")
+        self.tabs.addTab(Category20Tab(self.data_service), "Кат. 20: Отходы")
