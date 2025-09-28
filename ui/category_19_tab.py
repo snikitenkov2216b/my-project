@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QGroupBox, QHBoxLayout
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_19 import Category19Calculator
@@ -30,7 +30,9 @@ class Category19Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Выбор метода расчета ---
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         self.method_combobox = QComboBox()
         self.method_combobox.addItems([
             "Расчет по расходу энергоресурсов",
@@ -39,7 +41,6 @@ class Category19Tab(QWidget):
         main_layout.addWidget(QLabel("Выберите метод расчета:"))
         main_layout.addWidget(self.method_combobox)
 
-        # --- Стек виджетов для разных методов ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_energy_consumption_widget())
         self.stacked_widget.addWidget(self._create_road_length_widget())
@@ -47,7 +48,6 @@ class Category19Tab(QWidget):
 
         self.method_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
 
-        # --- Кнопка расчета и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -89,7 +89,12 @@ class Category19Tab(QWidget):
         combo.addItems(fuels)
         
         consumption_input = QLineEdit(placeholderText="Расход, т")
-        consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        consumption_input.setValidator(validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         
         remove_button = QPushButton("Удалить")
         
@@ -117,10 +122,16 @@ class Category19Tab(QWidget):
         stage_combo.addItems(self.data_service.get_road_stages_table_19_1())
 
         length_input = QLineEdit(placeholderText="Протяженность, км")
-        length_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        length_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        length_validator.setLocale(self.c_locale)
+        length_input.setValidator(length_validator)
         
         years_input = QLineEdit(placeholderText="Срок, лет")
-        years_input.setValidator(QDoubleValidator(1.0, 100.0, 1, self))
+        years_validator = QDoubleValidator(1.0, 100.0, 1, self)
+        years_validator.setLocale(self.c_locale)
+        years_input.setValidator(years_validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         
         remove_button = QPushButton("Удалить")
 
@@ -151,7 +162,10 @@ class Category19Tab(QWidget):
             co2_emissions = 0.0
 
             if current_index == 0: # По расходу
-                fuels = [{'name': r['combo'].currentText(), 'consumption': float(r['input'].text().replace(',', '.'))} for r in self.fuel_rows if r['input'].text()]
+                fuels = []
+                for r in self.fuel_rows:
+                    if r['input'].text():
+                        fuels.append({'name': r['combo'].currentText(), 'consumption': float(r['input'].text().replace(',', '.'))})
                 if not fuels: raise ValueError("Добавьте хотя бы один вид топлива.")
                 co2_emissions = self.calculator.calculate_from_energy_consumption(fuels)
 

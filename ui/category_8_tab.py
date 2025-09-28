@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QHBoxLayout, QGroupBox
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_8 import Category8Calculator
@@ -20,14 +20,16 @@ class Category8Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category8Calculator(self.data_service)
-        self.carbonate_rows = [] # Хранилище для динамических строк сырья
+        self.carbonate_rows = []
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Форма для ввода данных ---
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         group_box = QGroupBox("Карбонатное сырье, используемое в шихте")
         self.carbonates_layout = QVBoxLayout()
         group_box.setLayout(self.carbonates_layout)
@@ -38,7 +40,6 @@ class Category8Tab(QWidget):
         main_layout.addWidget(group_box)
         main_layout.addWidget(add_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -53,16 +54,19 @@ class Category8Tab(QWidget):
         row_layout = QHBoxLayout(row_widget)
         
         combo = QComboBox()
-        # Методика указывает на использование таблиц 6.1 и 8.1
         carbonates_6_1 = self.data_service.get_carbonate_formulas_table_6_1()
         carbonates_8_1 = self.data_service.get_glass_carbonate_formulas_table_8_1()
-        # Объединяем списки, избегая дубликатов
         all_carbonates = sorted(list(set(carbonates_6_1 + carbonates_8_1)))
         combo.addItems(all_carbonates)
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText("Масса, т")
-        line_edit.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        line_edit.setValidator(validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         
         remove_button = QPushButton("Удалить")
         

@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QHBoxLayout, QGroupBox
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_9 import Category9Calculator
@@ -20,14 +20,16 @@ class Category9Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category9Calculator(self.data_service)
-        self.raw_material_rows = [] # Хранилище для динамических строк сырья
+        self.raw_material_rows = []
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Форма для ввода данных ---
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         group_box = QGroupBox("Минеральное сырье, содержащее карбонаты")
         self.materials_layout = QVBoxLayout()
         group_box.setLayout(self.materials_layout)
@@ -38,7 +40,6 @@ class Category9Tab(QWidget):
         main_layout.addWidget(group_box)
         main_layout.addWidget(add_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -58,11 +59,17 @@ class Category9Tab(QWidget):
         
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса сырья, т")
-        mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        mass_validator.setLocale(self.c_locale)
+        mass_input.setValidator(mass_validator)
         
         fraction_input = QLineEdit()
         fraction_input.setPlaceholderText("Доля карбоната (0-1)")
-        fraction_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        fraction_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        fraction_validator.setLocale(self.c_locale)
+        fraction_input.setValidator(fraction_validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
         remove_button = QPushButton("Удалить")
         

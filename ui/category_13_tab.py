@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_13 import Category13Calculator
@@ -29,6 +29,9 @@ class Category13Tab(QWidget):
         form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
 
+        # Создаем локаль, которая использует точку как разделитель
+        c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         # 1. Выбор парникового газа
         self.gas_combobox = QComboBox()
         self.gas_combobox.addItems(["CHF3 (из производства ГХФУ-22)", "SF6 (из производства SF6)"])
@@ -36,19 +39,26 @@ class Category13Tab(QWidget):
 
         # 2. Поле для ввода массы произведенной продукции
         self.production_input = QLineEdit()
-        self.production_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        prod_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        prod_validator.setLocale(c_locale)
+        self.production_input.setValidator(prod_validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         self.production_input.setPlaceholderText("Масса основной продукции, т")
         form_layout.addRow("Производство продукции:", self.production_input)
         
         # 3. Поле для ввода коэффициента выбросов
         self.emission_factor_input = QLineEdit()
-        self.emission_factor_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        ef_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        ef_validator.setLocale(c_locale)
+        self.emission_factor_input.setValidator(ef_validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         self.emission_factor_input.setPlaceholderText("кг/т основной продукции")
         form_layout.addRow("Коэффициент выбросов:", self.emission_factor_input)
 
         main_layout.addLayout(form_layout)
 
-        # --- Кнопка расчета и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)

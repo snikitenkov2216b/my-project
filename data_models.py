@@ -1,7 +1,6 @@
 # data_models.py - Данные таблиц из методики расчета выбросов.
 # Комментарии на русском. Поддержка UTF-8.
 
-# ... (весь предыдущий код TABLE_1_1 ... TABLE_18_1 остается без изменений) ...
 # Таблица 1.1: Коэффициенты перевода, EF_CO2, W_C по видам топлива
 # Структура: dict с ключом 'Вид топлива': {'unit': str, 'k_ut': float, 'NCV': float, 'EF_CO2_ut': float, 'EF_CO2_TJ': float, 'W_C_ut': float, 'W_C_TJ': float}
 TABLE_1_1 = {
@@ -273,12 +272,33 @@ TABLE_21_1 = [
     {'type': 'Анаэробное сбраживание', 'EF_CH4_wet': 1, 'EF_N2O_wet': 0}
 ]
 
+# Новые списки для контекстных меню
+METALLURGY_RAW_MATERIALS = [
+    'Железорудные окатыши', 'Агломерат', 'Железосодержащее сырье', 
+    'Известняк', 'Доломит', 'Кокс металлургический', 'Коксующийся уголь', 
+    'Чугун, чугунный лом', 'Сталь, стальной лом', 
+    'Электроды для электродуговых печей',
+    'Углеродсодержащие материалы для сталеплавильных печей'
+]
+
+METALLURGY_PRODUCTS = [
+    'Железо прямого восстановления', 'Железо горячего брикетирования', 
+    'Чугун, чугунный лом', 'Сталь, стальной лом', 
+    'Газ горючий искусственный доменный', 'Шлак' 
+]
+
+FERROALLOY_RAW_MATERIALS = [
+    'Кокс металлургический', 'Антрацит', 'Каменный уголь', 
+    'Электроды для электродуговых печей', 'Стальная стружка'
+]
+
+FERROALLOY_PRODUCTS = [
+    'Феррохром', 'Ферросилиций', 'Ферромарганец', 'Силикомарганец', 'Шлак'
+]
 
 class DataService:
     """
     Класс-сервис для предоставления централизованного доступа ко всем табличным данным.
-    Он загружает все таблицы в память при создании экземпляра и предоставляет
-    методы для их получения, а также вспомогательные методы для UI.
     """
     def __init__(self):
         self.table_1_1 = TABLE_1_1
@@ -298,7 +318,11 @@ class DataService:
         self.table_20_5 = TABLE_20_5
         self.table_21_1 = TABLE_21_1
 
-    # ... (все предыдущие методы-геттеры остаются без изменений) ...
+        # Исправляем неточность в данных
+        for item in self.table_12_1:
+            if item['substance'] == 'Этан':
+                item['W_C'] = 0.799
+                break
 
     def get_fuels_table_1_1(self):
         return list(self.table_1_1.keys())
@@ -397,7 +421,6 @@ class DataService:
         return list(self.table_19_1.keys())
 
     def get_road_stages_table_19_1(self):
-        # Этапы одинаковы для всех типов дорог
         return list(self.table_19_1["Автомобильные дороги федерального значения"].keys())
 
     def get_road_work_data_table_19_1(self, road_type, stage, category):
@@ -415,3 +438,15 @@ class DataService:
             if item['type'] == treatment_type:
                 return item
         return None
+
+    def get_metallurgy_raw_materials(self):
+        return METALLURGY_RAW_MATERIALS
+
+    def get_metallurgy_products(self):
+        return METALLURGY_PRODUCTS
+        
+    def get_ferroalloy_raw_materials(self):
+        return FERROALLOY_RAW_MATERIALS
+
+    def get_ferroalloy_products(self):
+        return FERROALLOY_PRODUCTS

@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QGroupBox, QHBoxLayout, QScrollArea
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_12 import Category12Calculator
@@ -21,7 +21,6 @@ class Category12Tab(QWidget):
         self.data_service = data_service
         self.calculator = Category12Calculator(self.data_service)
         
-        # Списки для хранения ссылок на виджеты динамических строк
         self.raw_material_rows = []
         self.primary_product_rows = []
         self.by_product_rows = []
@@ -38,7 +37,9 @@ class Category12Tab(QWidget):
         scroll_area.setWidget(main_widget)
         main_layout.addWidget(scroll_area)
 
-        # --- Входящие потоки ---
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         inputs_group = QGroupBox("Входящие потоки (Сырье)")
         inputs_layout = QVBoxLayout()
         self.raw_materials_layout = QVBoxLayout()
@@ -49,11 +50,9 @@ class Category12Tab(QWidget):
         inputs_group.setLayout(inputs_layout)
         form_container_layout.addWidget(inputs_group)
 
-        # --- Выходящие потоки ---
         outputs_group = QGroupBox("Выходящие потоки (Продукция)")
         outputs_layout = QVBoxLayout()
 
-        # Секция основной продукции
         outputs_layout.addWidget(QLabel("Основная продукция:"))
         self.primary_products_layout = QVBoxLayout()
         add_primary_product_button = QPushButton("Добавить основную продукцию")
@@ -61,7 +60,6 @@ class Category12Tab(QWidget):
         outputs_layout.addLayout(self.primary_products_layout)
         outputs_layout.addWidget(add_primary_product_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # Секция сопутствующей продукции
         outputs_layout.addWidget(QLabel("Сопутствующая продукция:"))
         self.by_products_layout = QVBoxLayout()
         add_by_product_button = QPushButton("Добавить сопутствующий продукт")
@@ -72,7 +70,6 @@ class Category12Tab(QWidget):
         outputs_group.setLayout(outputs_layout)
         form_container_layout.addWidget(outputs_group)
 
-        # --- Кнопка расчета и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         form_container_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -82,12 +79,10 @@ class Category12Tab(QWidget):
         form_container_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
     def _create_dynamic_row(self, placeholder_text, target_layout, storage_list):
-        """Создает одну динамическую строку для ввода вещества."""
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         
         combo = QComboBox()
-        # Объединяем вещества из таблиц 12.1 и 1.1
         substances_12_1 = self.data_service.get_petrochemical_substance_names_table_12_1()
         substances_1_1 = self.data_service.get_fuels_table_1_1()
         all_substances = sorted(list(set(substances_12_1 + substances_1_1)))
@@ -95,7 +90,12 @@ class Category12Tab(QWidget):
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
-        line_edit.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        line_edit.setValidator(validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         
         remove_button = QPushButton("Удалить")
         
@@ -110,7 +110,6 @@ class Category12Tab(QWidget):
         remove_button.clicked.connect(lambda: self._remove_row(row_data, target_layout, storage_list))
 
     def _remove_row(self, row_data, target_layout, storage_list):
-        """Удаляет строку из интерфейса и из списка хранения."""
         row_widget = row_data['widget']
         target_layout.removeWidget(row_widget)
         row_widget.deleteLater()

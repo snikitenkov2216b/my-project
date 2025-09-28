@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QGroupBox, QHBoxLayout
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_17 import Category17Calculator
@@ -31,6 +31,9 @@ class Category17Tab(QWidget):
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
         self.calc_type_combobox = QComboBox()
         self.calc_type_combobox.addItems([
@@ -109,7 +112,13 @@ class Category17Tab(QWidget):
         combo = QComboBox()
         combo.addItems(item_list)
         line_edit = QLineEdit(placeholderText=placeholder)
-        line_edit.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        line_edit.setValidator(validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+
         remove_button = QPushButton("Удалить")
         row_layout.addWidget(combo)
         row_layout.addWidget(line_edit)
@@ -142,19 +151,30 @@ class Category17Tab(QWidget):
             current_index = self.calc_type_combobox.currentIndex()
             co2_emissions = 0.0
 
+            def collect_data(storage_list, key_name):
+                items = []
+                for row in storage_list:
+                    if row['input'].text():
+                        name = row['combo'].currentText()
+                        value_str = row['input'].text().replace(',', '.')
+                        if not value_str:
+                            raise ValueError(f"Не заполнено поле для '{name}'")
+                        items.append({'name': name, key_name: float(value_str)})
+                return items
+
             if current_index == 0:
-                fuels = [{'name': r['combo'].currentText(), 'consumption': float(r['input'].text().replace(',', '.'))} for r in self.fuel_use_fuels if r['input'].text()]
-                products = [{'name': r['combo'].currentText(), 'production': float(r['input'].text().replace(',', '.'))} for r in self.fuel_use_products if r['input'].text()]
+                fuels = collect_data(self.fuel_use_fuels, 'consumption')
+                products = collect_data(self.fuel_use_products, 'production')
                 if not fuels: raise ValueError("Добавьте хотя бы один вид топлива.")
                 co2_emissions = self.calculator.calculate_from_fuel_use(fuels, products)
             
             elif current_index == 1:
-                reductants = [{'name': r['combo'].currentText(), 'consumption': float(r['input'].text().replace(',', '.'))} for r in self.reductants if r['input'].text()]
+                reductants = collect_data(self.reductants, 'consumption')
                 if not reductants: raise ValueError("Добавьте хотя бы один восстановитель.")
                 co2_emissions = self.calculator.calculate_from_reductants(reductants)
 
             elif current_index == 2:
-                carbonates = [{'name': r['combo'].currentText(), 'mass': float(r['input'].text().replace(',', '.'))} for r in self.carbonates if r['input'].text()]
+                carbonates = collect_data(self.carbonates, 'mass')
                 if not carbonates: raise ValueError("Добавьте хотя бы один карбонат.")
                 co2_emissions = self.calculator.calculate_from_carbonates(carbonates)
             
@@ -164,3 +184,4 @@ class Category17Tab(QWidget):
             QMessageBox.warning(self, "Ошибка ввода", str(e))
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
+            self.result_label.setText("Результат: Ошибка")

@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QTextEdit
 )
 from PyQt6.QtGui import QDoubleValidator, QIntValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_20 import Category20Calculator
@@ -25,6 +25,9 @@ class Category20Tab(QWidget):
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
         # --- Выбор типа расчета ---
         self.calc_type_combobox = QComboBox()
@@ -58,15 +61,21 @@ class Category20Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.waste_mass_input = QLineEdit("100")
-        self.waste_mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        waste_mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        waste_mass_validator.setLocale(self.c_locale)
+        self.waste_mass_input.setValidator(waste_mass_validator)
         layout.addRow("Ежегодная масса отходов (Гг/год):", self.waste_mass_input)
 
         self.doc_input = QLineEdit("0.15")
-        self.doc_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        doc_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        doc_validator.setLocale(self.c_locale)
+        self.doc_input.setValidator(doc_validator)
         layout.addRow("Доля DOC в отходах (доля):", self.doc_input)
         
         self.doc_f_input = QLineEdit("0.5")
-        self.doc_f_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        doc_f_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        doc_f_validator.setLocale(self.c_locale)
+        self.doc_f_input.setValidator(doc_f_validator)
         layout.addRow("Доля разлагаемого DOC (DOCf, доля):", self.doc_f_input)
 
         self.mcf_combobox = QComboBox()
@@ -74,11 +83,15 @@ class Category20Tab(QWidget):
         layout.addRow("Тип объекта (MCF):", self.mcf_combobox)
 
         self.f_input = QLineEdit("0.5")
-        self.f_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        f_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        f_validator.setLocale(self.c_locale)
+        self.f_input.setValidator(f_validator)
         layout.addRow("Доля CH4 в свалочном газе (F, доля):", self.f_input)
         
         self.k_input = QLineEdit("0.05")
-        self.k_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        k_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        k_validator.setLocale(self.c_locale)
+        self.k_input.setValidator(k_validator)
         layout.addRow("Постоянная реакции (k, 1/год):", self.k_input)
         
         self.years_input = QLineEdit("20")
@@ -96,7 +109,9 @@ class Category20Tab(QWidget):
         layout.addRow("Тип переработки:", self.bio_treatment_type_combobox)
         
         self.bio_waste_mass_input = QLineEdit()
-        self.bio_waste_mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        bio_waste_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        bio_waste_validator.setLocale(self.c_locale)
+        self.bio_waste_mass_input.setValidator(bio_waste_validator)
         layout.addRow("Масса отходов (тонн, сырой вес):", self.bio_waste_mass_input)
 
         return widget
@@ -123,7 +138,9 @@ class Category20Tab(QWidget):
                 self.result_display.setText(result_text)
 
             elif current_index == 1: # Био-переработка
-                waste_mass = float(self.bio_waste_mass_input.text().replace(',', '.'))
+                waste_mass_str = self.bio_waste_mass_input.text().replace(',', '.')
+                if not waste_mass_str: raise ValueError("Введите массу отходов.")
+                waste_mass = float(waste_mass_str)
                 treatment_type = self.bio_treatment_type_combobox.currentText()
                 
                 emissions = self.calculator.calculate_biological_treatment_emissions(waste_mass, treatment_type)
@@ -138,3 +155,4 @@ class Category20Tab(QWidget):
             QMessageBox.warning(self, "Ошибка ввода", str(e))
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
+            self.result_display.setText(f"Критическая ошибка: {e}")

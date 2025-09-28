@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QHBoxLayout
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_11 import Category11Calculator
@@ -27,10 +27,12 @@ class Category11Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Форма для ввода данных ---
         form_layout = QFormLayout()
         form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+
+        # Создаем локаль, которая использует точку как разделитель
+        c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
         # 1. Выпадающий список для выбора производственного процесса
         self.process_combobox = QComboBox()
@@ -41,7 +43,13 @@ class Category11Tab(QWidget):
         # 2. Поле для ввода массы произведенной продукции
         production_layout = QHBoxLayout()
         self.production_input = QLineEdit()
-        self.production_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(c_locale)
+        self.production_input.setValidator(validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+        
         self.production_input.setPlaceholderText("Введите числовое значение")
         production_layout.addWidget(self.production_input)
         production_layout.addWidget(QLabel("(т)"))
@@ -49,7 +57,6 @@ class Category11Tab(QWidget):
         
         main_layout.addLayout(form_layout)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы N2O")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)

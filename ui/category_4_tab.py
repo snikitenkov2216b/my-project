@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_4 import Category4Calculator
@@ -26,7 +26,6 @@ class Category4Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Выбор процесса ---
         process_layout = QFormLayout()
         self.process_combobox = QComboBox()
         self.process_combobox.addItems([
@@ -37,17 +36,14 @@ class Category4Tab(QWidget):
         process_layout.addRow("Выберите процесс:", self.process_combobox)
         main_layout.addLayout(process_layout)
 
-        # --- Стек виджетов для разных форм ввода ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_catalyst_regeneration_widget())
         self.stacked_widget.addWidget(self._create_coke_calcination_widget())
         self.stacked_widget.addWidget(self._create_hydrogen_production_widget())
         main_layout.addWidget(self.stacked_widget)
 
-        # Связываем выбор в ComboBox с переключением виджетов в QStackedWidget
         self.process_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -57,46 +53,59 @@ class Category4Tab(QWidget):
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
     def _create_catalyst_regeneration_widget(self):
-        """Создает виджет с полями для процесса 'Регенерация катализаторов'."""
         widget = QWidget()
         layout = QFormLayout(widget)
         layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
         
+        c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+        
         self.coke_burnoff_input = QLineEdit()
-        self.coke_burnoff_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        coke_burnoff_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        coke_burnoff_validator.setLocale(c_locale)
+        self.coke_burnoff_input.setValidator(coke_burnoff_validator)
         layout.addRow("Масса выгоревшего кокса (т):", self.coke_burnoff_input)
 
         self.coke_carbon_content_input = QLineEdit("0.94")
-        self.coke_carbon_content_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        coke_carbon_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        coke_carbon_validator.setLocale(c_locale)
+        self.coke_carbon_content_input.setValidator(coke_carbon_validator)
         layout.addRow("Содержание углерода в коксе (доля):", self.coke_carbon_content_input)
         
         return widget
 
     def _create_coke_calcination_widget(self):
-        """Создает виджет с полями для процесса 'Прокалка нефтяного кокса'."""
         widget = QWidget()
         layout = QFormLayout(widget)
         layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
 
+        c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         self.raw_coke_mass_input = QLineEdit()
-        self.raw_coke_mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        raw_coke_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        raw_coke_validator.setLocale(c_locale)
+        self.raw_coke_mass_input.setValidator(raw_coke_validator)
         layout.addRow("Количество сырого кокса (т):", self.raw_coke_mass_input)
 
         self.calcined_coke_mass_input = QLineEdit()
-        self.calcined_coke_mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        calcined_coke_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        calcined_coke_validator.setLocale(c_locale)
+        self.calcined_coke_mass_input.setValidator(calcined_coke_validator)
         layout.addRow("Количество прокаленного кокса (т):", self.calcined_coke_mass_input)
 
         self.dust_mass_input = QLineEdit()
-        self.dust_mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        dust_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        dust_validator.setLocale(c_locale)
+        self.dust_mass_input.setValidator(dust_validator)
         layout.addRow("Количество уловленной коксовой пыли (т):", self.dust_mass_input)
         
         return widget
 
     def _create_hydrogen_production_widget(self):
-        """Создает виджет с полями для процесса 'Производство водорода'."""
         widget = QWidget()
         layout = QFormLayout(widget)
         layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+        
+        c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
         self.feedstock_combobox = QComboBox()
         fuels = self.data_service.get_fuels_table_1_1()
@@ -106,17 +115,20 @@ class Category4Tab(QWidget):
 
         consumption_layout = QHBoxLayout()
         self.feedstock_consumption_input = QLineEdit()
-        self.feedstock_consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        consumption_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        consumption_validator.setLocale(c_locale)
+        self.feedstock_consumption_input.setValidator(consumption_validator)
+
         self.hydrogen_units_label = QLabel()
         consumption_layout.addWidget(self.feedstock_consumption_input)
         consumption_layout.addWidget(self.hydrogen_units_label)
         layout.addRow("Расход сырья:", consumption_layout)
         
-        self._update_hydrogen_units() # Первоначальная установка единиц
+        self._update_hydrogen_units()
         return widget
 
     def _update_hydrogen_units(self):
-        """Обновляет метку с единицами измерения для сырья производства водорода."""
         selected_fuel = self.feedstock_combobox.currentText()
         fuel_data = self.data_service.get_fuel_data_table_1_1(selected_fuel)
         if fuel_data and 'unit' in fuel_data:
@@ -125,24 +137,36 @@ class Category4Tab(QWidget):
             self.hydrogen_units_label.setText("")
 
     def _perform_calculation(self):
-        """Выполняет расчет в зависимости от выбранного процесса."""
-        current_process_index = self.process_combobox.currentIndex()
         try:
             co2_emissions = 0.0
-            if current_process_index == 0: # Регенерация катализаторов
-                coke_burnoff = float(self.coke_burnoff_input.text().replace(',', '.'))
-                coke_carbon_content = float(self.coke_carbon_content_input.text().replace(',', '.'))
+            current_process_index = self.process_combobox.currentIndex()
+
+            if current_process_index == 0:
+                coke_burnoff_str = self.coke_burnoff_input.text().replace(',', '.')
+                coke_carbon_content_str = self.coke_carbon_content_input.text().replace(',', '.')
+                if not coke_burnoff_str or not coke_carbon_content_str: raise ValueError("Заполните все поля.")
+                
+                coke_burnoff = float(coke_burnoff_str)
+                coke_carbon_content = float(coke_carbon_content_str)
                 co2_emissions = self.calculator.calculate_catalyst_regeneration(coke_burnoff, coke_carbon_content)
             
-            elif current_process_index == 1: # Прокалка кокса
-                raw_coke = float(self.raw_coke_mass_input.text().replace(',', '.'))
-                calcined_coke = float(self.calcined_coke_mass_input.text().replace(',', '.'))
-                dust = float(self.dust_mass_input.text().replace(',', '.'))
+            elif current_process_index == 1:
+                raw_coke_str = self.raw_coke_mass_input.text().replace(',', '.')
+                calcined_coke_str = self.calcined_coke_mass_input.text().replace(',', '.')
+                dust_str = self.dust_mass_input.text().replace(',', '.')
+                if not all([raw_coke_str, calcined_coke_str, dust_str]): raise ValueError("Заполните все поля.")
+
+                raw_coke = float(raw_coke_str)
+                calcined_coke = float(calcined_coke_str)
+                dust = float(dust_str)
                 co2_emissions = self.calculator.calculate_coke_calcination(raw_coke, calcined_coke, dust)
 
-            elif current_process_index == 2: # Производство водорода
+            elif current_process_index == 2:
                 feedstock_name = self.feedstock_combobox.currentText()
-                consumption = float(self.feedstock_consumption_input.text().replace(',', '.'))
+                consumption_str = self.feedstock_consumption_input.text().replace(',', '.')
+                if not consumption_str: raise ValueError("Заполните все поля.")
+                
+                consumption = float(consumption_str)
                 co2_emissions = self.calculator.calculate_hydrogen_production(feedstock_name, consumption)
 
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")

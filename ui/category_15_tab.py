@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QGroupBox, QHBoxLayout, QScrollArea
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_15 import Category15Calculator
@@ -38,7 +38,9 @@ class Category15Tab(QWidget):
         scroll_area.setWidget(main_widget)
         main_layout.addWidget(scroll_area)
 
-        # --- Входящие потоки ---
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         inputs_group = QGroupBox("Входящие потоки")
         inputs_layout = QVBoxLayout()
         
@@ -59,7 +61,6 @@ class Category15Tab(QWidget):
         inputs_group.setLayout(inputs_layout)
         form_container_layout.addWidget(inputs_group)
 
-        # --- Выходящие потоки ---
         outputs_group = QGroupBox("Выходящие потоки")
         outputs_layout = QVBoxLayout()
 
@@ -80,7 +81,6 @@ class Category15Tab(QWidget):
         outputs_group.setLayout(outputs_layout)
         form_container_layout.addWidget(outputs_group)
 
-        # --- Кнопка расчета и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         form_container_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -98,7 +98,10 @@ class Category15Tab(QWidget):
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
-        line_edit.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale) # <--- ИСПРАВЛЕНИЕ ВАЛИДАТОРА
+        line_edit.setValidator(validator)
         
         remove_button = QPushButton("Удалить")
         
@@ -118,21 +121,23 @@ class Category15Tab(QWidget):
         row_widget.deleteLater()
         storage_list.remove(row_data)
 
+    # --- ИСПРАВЛЕНИЕ ЛОГИКИ СПИСКОВ ---
     def _add_raw_material_row(self):
-        items = self.data_service.get_metallurgy_material_names_table_14_1() + self.data_service.get_fuels_table_1_1()
-        self._create_dynamic_row("Расход, т", self.raw_materials_layout, self.raw_material_rows, sorted(list(set(items))))
+        items = self.data_service.get_ferroalloy_raw_materials()
+        self._create_dynamic_row("Расход, т", self.raw_materials_layout, self.raw_material_rows, items)
 
     def _add_fuel_row(self):
         items = self.data_service.get_fuels_table_1_1()
         self._create_dynamic_row("Расход, т или тыс. м3", self.fuels_layout, self.fuel_rows, items)
 
     def _add_product_row(self):
-        items = self.data_service.get_metallurgy_material_names_table_14_1() + self.data_service.get_fuels_table_1_1()
-        self._create_dynamic_row("Выход, т", self.products_layout, self.product_rows, sorted(list(set(items))))
+        items = self.data_service.get_ferroalloy_products()
+        self._create_dynamic_row("Выход, т", self.products_layout, self.product_rows, items)
 
     def _add_by_product_row(self):
-        items = self.data_service.get_metallurgy_material_names_table_14_1() + self.data_service.get_fuels_table_1_1()
+        items = self.data_service.get_ferroalloy_products() + self.data_service.get_fuels_table_1_1()
         self._create_dynamic_row("Выход, т или тыс. м3", self.by_products_layout, self.by_product_rows, sorted(list(set(items))))
+    # --- КОНЕЦ ИСПРАВЛЕНИЯ ЛОГИКИ СПИСКОВ ---
 
     def _perform_calculation(self):
         try:

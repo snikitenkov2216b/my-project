@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_16 import Category16Calculator
@@ -26,7 +26,9 @@ class Category16Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Выбор типа расчета ---
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
         self.calc_type_combobox = QComboBox()
         self.calc_type_combobox.addItems([
             "Выбросы перфторуглеродов (ПФУ)",
@@ -38,7 +40,6 @@ class Category16Tab(QWidget):
         main_layout.addWidget(QLabel("Выберите тип расчета:"))
         main_layout.addWidget(self.calc_type_combobox)
 
-        # --- Стек виджетов для разных форм ввода ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_pfc_widget())
         self.stacked_widget.addWidget(self._create_soderberg_widget())
@@ -49,7 +50,6 @@ class Category16Tab(QWidget):
 
         self.calc_type_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -67,15 +67,21 @@ class Category16Tab(QWidget):
         layout.addRow("Технология:", self.pfc_technology_combobox)
 
         self.aluminium_production_input = QLineEdit()
-        self.aluminium_production_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        al_prod_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        al_prod_validator.setLocale(self.c_locale)
+        self.aluminium_production_input.setValidator(al_prod_validator)
         layout.addRow("Выпуск алюминия (т/год):", self.aluminium_production_input)
 
         self.aef_input = QLineEdit()
-        self.aef_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        aef_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        aef_validator.setLocale(self.c_locale)
+        self.aef_input.setValidator(aef_validator)
         layout.addRow("Частота анодных эффектов (шт./ванно-сутки):", self.aef_input)
 
         self.aed_input = QLineEdit()
-        self.aed_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        aed_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        aed_validator.setLocale(self.c_locale)
+        self.aed_input.setValidator(aed_validator)
         layout.addRow("Продолжительность анодных эффектов (минут/шт.):", self.aed_input)
         
         return widget
@@ -85,19 +91,27 @@ class Category16Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.soderberg_anode_paste_input = QLineEdit()
-        self.soderberg_anode_paste_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        soderberg_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        soderberg_validator.setLocale(self.c_locale)
+        self.soderberg_anode_paste_input.setValidator(soderberg_validator)
         layout.addRow("Расход анодной массы (т/т Ал.):", self.soderberg_anode_paste_input)
 
         self.soderberg_h_input = QLineEdit("1.4")
-        self.soderberg_h_input.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        h_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        h_validator.setLocale(self.c_locale)
+        self.soderberg_h_input.setValidator(h_validator)
         layout.addRow("Содержание водорода в массе (%):", self.soderberg_h_input)
         
         self.soderberg_s_input = QLineEdit()
-        self.soderberg_s_input.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        s_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        s_validator.setLocale(self.c_locale)
+        self.soderberg_s_input.setValidator(s_validator)
         layout.addRow("Содержание серы в массе (%):", self.soderberg_s_input)
 
         self.soderberg_z_input = QLineEdit()
-        self.soderberg_z_input.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        z_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        z_validator.setLocale(self.c_locale)
+        self.soderberg_z_input.setValidator(z_validator)
         layout.addRow("Содержание золы в массе (%):", self.soderberg_z_input)
 
         return widget
@@ -107,15 +121,21 @@ class Category16Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.prebaked_anode_input = QLineEdit()
-        self.prebaked_anode_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        anode_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        anode_validator.setLocale(self.c_locale)
+        self.prebaked_anode_input.setValidator(anode_validator)
         layout.addRow("Расход обожженных анодов нетто (т/т Ал.):", self.prebaked_anode_input)
         
         self.prebaked_s_input = QLineEdit()
-        self.prebaked_s_input.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        s_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        s_validator.setLocale(self.c_locale)
+        self.prebaked_s_input.setValidator(s_validator)
         layout.addRow("Содержание серы в аноде (%):", self.prebaked_s_input)
 
         self.prebaked_z_input = QLineEdit()
-        self.prebaked_z_input.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        z_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        z_validator.setLocale(self.c_locale)
+        self.prebaked_z_input.setValidator(z_validator)
         layout.addRow("Содержание золы в аноде (%):", self.prebaked_z_input)
 
         return widget
@@ -125,15 +145,21 @@ class Category16Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.coke_calc_consumption_input = QLineEdit()
-        self.coke_calc_consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        consumption_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        consumption_validator.setLocale(self.c_locale)
+        self.coke_calc_consumption_input.setValidator(consumption_validator)
         layout.addRow("Расход сырого кокса (т/год):", self.coke_calc_consumption_input)
 
         self.coke_loss_factor_input = QLineEdit()
-        self.coke_loss_factor_input.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        loss_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        loss_validator.setLocale(self.c_locale)
+        self.coke_loss_factor_input.setValidator(loss_validator)
         layout.addRow("Угар кокса (%):", self.coke_loss_factor_input)
 
         self.coke_carbon_content_input_calc = QLineEdit("96.0")
-        self.coke_carbon_content_input_calc.setValidator(QDoubleValidator(0.0, 100.0, 4, self))
+        carbon_validator = QDoubleValidator(0.0, 100.0, 4, self)
+        carbon_validator.setLocale(self.c_locale)
+        self.coke_carbon_content_input_calc.setValidator(carbon_validator)
         layout.addRow("Содержание углерода в коксе (%):", self.coke_carbon_content_input_calc)
         
         return widget
@@ -143,7 +169,9 @@ class Category16Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.green_anode_prod_input = QLineEdit()
-        self.green_anode_prod_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        prod_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        prod_validator.setLocale(self.c_locale)
+        self.green_anode_prod_input.setValidator(prod_validator)
         layout.addRow("Производство 'зеленых' анодов (т/год):", self.green_anode_prod_input)
         
         return widget

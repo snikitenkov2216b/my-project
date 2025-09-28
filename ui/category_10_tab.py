@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QHBoxLayout
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_10 import Category10Calculator
@@ -26,10 +26,12 @@ class Category10Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Форма для ввода данных ---
         form_layout = QFormLayout()
         form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+
+        # Создаем локаль, которая использует точку как разделитель
+        c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
         # 1. Выпадающий список для выбора вида сырья
         self.feedstock_combobox = QComboBox()
@@ -41,7 +43,11 @@ class Category10Tab(QWidget):
         # 2. Поле для ввода расхода сырья
         consumption_layout = QHBoxLayout()
         self.feedstock_consumption_input = QLineEdit()
-        self.feedstock_consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        consumption_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        consumption_validator.setLocale(c_locale)
+        self.feedstock_consumption_input.setValidator(consumption_validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         self.feedstock_consumption_input.setPlaceholderText("Введите числовое значение")
         self.units_label = QLabel()
         consumption_layout.addWidget(self.feedstock_consumption_input)
@@ -50,12 +56,15 @@ class Category10Tab(QWidget):
 
         # 3. Поле для ввода уловленного CO2
         self.recovered_co2_input = QLineEdit("0.0")
-        self.recovered_co2_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        recovered_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        recovered_validator.setLocale(c_locale)
+        self.recovered_co2_input.setValidator(recovered_validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         form_layout.addRow("Масса уловленного CO2 (т):", self.recovered_co2_input)
 
         main_layout.addLayout(form_layout)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -64,7 +73,7 @@ class Category10Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
         
-        self._update_units() # Первоначальная установка единиц
+        self._update_units()
 
     def _update_units(self):
         """Обновляет метку с единицами измерения в зависимости от выбранного сырья."""
@@ -97,7 +106,6 @@ class Category10Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
-            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

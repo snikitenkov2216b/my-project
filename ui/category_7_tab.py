@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
 
 from data_models import DataService
 from calculations.category_7 import Category7Calculator
@@ -20,14 +20,16 @@ class Category7Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category7Calculator(self.data_service)
-        self.carbonate_rows = [] # Хранилище для динамических строк сырья
+        self.carbonate_rows = []
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        
+        # Создаем локаль один раз для всего класса
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
-        # --- Выбор метода расчета ---
         method_layout = QFormLayout()
         self.method_combobox = QComboBox()
         self.method_combobox.addItems([
@@ -37,7 +39,6 @@ class Category7Tab(QWidget):
         method_layout.addRow("Выберите метод расчета:", self.method_combobox)
         main_layout.addLayout(method_layout)
 
-        # --- Стек виджетов для разных форм ввода ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_raw_materials_widget())
         self.stacked_widget.addWidget(self._create_lime_widget())
@@ -45,7 +46,6 @@ class Category7Tab(QWidget):
 
         self.method_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -55,7 +55,6 @@ class Category7Tab(QWidget):
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
     def _create_raw_materials_widget(self):
-        """Создает виджет для метода 'на основе расхода сырья'."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -73,18 +72,21 @@ class Category7Tab(QWidget):
         return widget
 
     def _add_carbonate_row(self):
-        """Добавляет новую динамическую строку для ввода данных по карбонату."""
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         
         combo = QComboBox()
-        # Используем те же карбонаты, что и для цемента (Таблица 6.1)
         carbonate_names = self.data_service.get_carbonate_formulas_table_6_1()
         combo.addItems(carbonate_names)
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText("Масса, т")
-        line_edit.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        line_edit.setValidator(validator)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         
         remove_button = QPushButton("Удалить")
         
@@ -100,40 +102,43 @@ class Category7Tab(QWidget):
         remove_button.clicked.connect(lambda: self._remove_row(row_data, self.carbonates_layout, self.carbonate_rows))
 
     def _remove_row(self, row_data, target_layout, storage_list):
-        """Удаляет строку из интерфейса и из списка хранения."""
         row_widget = row_data['widget']
         target_layout.removeWidget(row_widget)
         row_widget.deleteLater()
         storage_list.remove(row_data)
 
     def _create_lime_widget(self):
-        """Создает виджет для метода 'на основе производства извести'."""
         widget = QWidget()
         layout = QFormLayout(widget)
         layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
 
         self.lime_production_input = QLineEdit()
-        self.lime_production_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        lime_prod_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        lime_prod_validator.setLocale(self.c_locale)
+        self.lime_production_input.setValidator(lime_prod_validator)
         layout.addRow("Масса произведенной извести (т):", self.lime_production_input)
 
         self.lime_cao_fraction_input = QLineEdit()
-        self.lime_cao_fraction_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        cao_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        cao_validator.setLocale(self.c_locale)
+        self.lime_cao_fraction_input.setValidator(cao_validator)
         self.lime_cao_fraction_input.setPlaceholderText("Например, 0.95")
         layout.addRow("Массовая доля CaO в извести (доля):", self.lime_cao_fraction_input)
 
         self.lime_mgo_fraction_input = QLineEdit()
-        self.lime_mgo_fraction_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        mgo_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        mgo_validator.setLocale(self.c_locale)
+        self.lime_mgo_fraction_input.setValidator(mgo_validator)
         self.lime_mgo_fraction_input.setPlaceholderText("Например, 0.01")
         layout.addRow("Массовая доля MgO в извести (доля):", self.lime_mgo_fraction_input)
         
         return widget
 
     def _perform_calculation(self):
-        """Выполняет расчет в зависимости от выбранного метода."""
         current_method_index = self.method_combobox.currentIndex()
         try:
             co2_emissions = 0.0
-            if current_method_index == 0: # Расчет на основе сырья
+            if current_method_index == 0:
                 if not self.carbonate_rows:
                     raise ValueError("Добавьте хотя бы один вид карбонатного сырья.")
                 
@@ -147,7 +152,7 @@ class Category7Tab(QWidget):
                 
                 co2_emissions = self.calculator.calculate_based_on_raw_materials(carbonates_data)
 
-            elif current_method_index == 1: # Расчет на основе извести
+            elif current_method_index == 1:
                 lime_prod_str = self.lime_production_input.text().replace(',', '.')
                 cao_frac_str = self.lime_cao_fraction_input.text().replace(',', '.')
                 mgo_frac_str = self.lime_mgo_fraction_input.text().replace(',', '.')

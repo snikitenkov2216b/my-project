@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLocale
 
 from data_models import DataService
 from calculations.category_6 import Category6Calculator
@@ -20,14 +20,19 @@ class Category6Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category6Calculator(self.data_service)
-        self.carbonate_rows = [] # Хранилище для динамических строк сырья
+        self.carbonate_rows = []
+        
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        # Создаем локаль один раз для всего класса в конструкторе
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Выбор метода расчета ---
         method_layout = QFormLayout()
         self.method_combobox = QComboBox()
         self.method_combobox.addItems([
@@ -37,7 +42,6 @@ class Category6Tab(QWidget):
         method_layout.addRow("Выберите метод расчета:", self.method_combobox)
         main_layout.addLayout(method_layout)
 
-        # --- Стек виджетов для разных форм ввода ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_raw_materials_widget())
         self.stacked_widget.addWidget(self._create_clinker_widget())
@@ -45,7 +49,6 @@ class Category6Tab(QWidget):
 
         self.method_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
 
-        # --- Кнопка расчета и область результатов ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -55,7 +58,6 @@ class Category6Tab(QWidget):
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
     def _create_raw_materials_widget(self):
-        """Создает виджет для метода 'на основе расхода сырья'."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -73,7 +75,6 @@ class Category6Tab(QWidget):
         return widget
 
     def _add_carbonate_row(self):
-        """Добавляет новую динамическую строку для ввода данных по карбонату."""
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         
@@ -83,7 +84,10 @@ class Category6Tab(QWidget):
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText("Масса, т")
-        line_edit.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale) # Используем атрибут класса
+        line_edit.setValidator(validator)
         
         remove_button = QPushButton("Удалить")
         
@@ -99,40 +103,43 @@ class Category6Tab(QWidget):
         remove_button.clicked.connect(lambda: self._remove_row(row_data, self.carbonates_layout, self.carbonate_rows))
 
     def _remove_row(self, row_data, target_layout, storage_list):
-        """Удаляет строку из интерфейса и из списка хранения."""
         row_widget = row_data['widget']
         target_layout.removeWidget(row_widget)
         row_widget.deleteLater()
         storage_list.remove(row_data)
 
     def _create_clinker_widget(self):
-        """Создает виджет для метода 'на основе производства клинкера'."""
         widget = QWidget()
         layout = QFormLayout(widget)
         layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
 
         self.clinker_production_input = QLineEdit()
-        self.clinker_production_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self))
+        clinker_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        clinker_validator.setLocale(self.c_locale) # Используем атрибут класса
+        self.clinker_production_input.setValidator(clinker_validator)
         layout.addRow("Масса произведенного клинкера (т):", self.clinker_production_input)
 
         self.cao_fraction_input = QLineEdit()
-        self.cao_fraction_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        cao_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        cao_validator.setLocale(self.c_locale) # Используем атрибут класса
+        self.cao_fraction_input.setValidator(cao_validator)
         self.cao_fraction_input.setPlaceholderText("Например, 0.65")
         layout.addRow("Массовая доля CaO в клинкере (доля):", self.cao_fraction_input)
 
         self.mgo_fraction_input = QLineEdit()
-        self.mgo_fraction_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self))
+        mgo_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        mgo_validator.setLocale(self.c_locale) # Используем атрибут класса
+        self.mgo_fraction_input.setValidator(mgo_validator)
         self.mgo_fraction_input.setPlaceholderText("Например, 0.02")
         layout.addRow("Массовая доля MgO в клинкере (доля):", self.mgo_fraction_input)
         
         return widget
 
     def _perform_calculation(self):
-        """Выполняет расчет в зависимости от выбранного метода."""
         current_method_index = self.method_combobox.currentIndex()
         try:
             co2_emissions = 0.0
-            if current_method_index == 0: # Расчет на основе сырья
+            if current_method_index == 0:
                 if not self.carbonate_rows:
                     raise ValueError("Добавьте хотя бы один вид карбонатного сырья.")
                 
@@ -146,7 +153,7 @@ class Category6Tab(QWidget):
                 
                 co2_emissions = self.calculator.calculate_based_on_raw_materials(carbonates_data)
 
-            elif current_method_index == 1: # Расчет на основе клинкера
+            elif current_method_index == 1:
                 clinker_prod_str = self.clinker_production_input.text().replace(',', '.')
                 cao_frac_str = self.cao_fraction_input.text().replace(',', '.')
                 mgo_frac_str = self.mgo_fraction_input.text().replace(',', '.')
