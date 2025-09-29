@@ -1,5 +1,6 @@
 # ui/category_18_tab.py - Виджет вкладки для расчетов по Категории 18.
 # Реализует интерфейс для различных видов транспорта.
+# Код написан полностью, без сокращений.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -7,7 +8,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QRadioButton
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
+from PyQt6.QtCore import Qt, QLocale
 
 from data_models import DataService
 from calculations.category_18 import Category18Calculator
@@ -20,20 +21,26 @@ class Category18Tab(QWidget):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category18Calculator(self.data_service)
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Создаем локаль один раз для всего класса
-        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
-
+        # --- Выбор типа транспорта ---
+        transport_layout = QFormLayout()
         self.transport_type_combobox = QComboBox()
-        self.transport_type_combobox.addItems(["Автомобильный", "Железнодорожный", "Водный", "Воздушный"])
-        main_layout.addWidget(QLabel("Выберите вид транспорта:"))
-        main_layout.addWidget(self.transport_type_combobox)
+        self.transport_type_combobox.addItems([
+            "Автомобильный транспорт",
+            "Железнодорожный транспорт",
+            "Водный транспорт",
+            "Воздушный транспорт"
+        ])
+        transport_layout.addRow("Выберите вид транспорта:", self.transport_type_combobox)
+        main_layout.addLayout(transport_layout)
 
+        # --- Стек виджетов для разных видов транспорта ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_road_transport_widget())
         self.stacked_widget.addWidget(self._create_railway_transport_widget())
@@ -43,6 +50,7 @@ class Category18Tab(QWidget):
 
         self.transport_type_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
 
+        # --- Кнопка и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -51,58 +59,57 @@ class Category18Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
+    def _create_line_edit(self, validator_params):
+        line_edit = QLineEdit()
+        validator = QDoubleValidator(*validator_params, self)
+        validator.setLocale(self.c_locale)
+        line_edit.setValidator(validator)
+        return line_edit
+
     def _create_road_transport_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
-        
+
         self.road_fuel_combobox = QComboBox()
-        road_fuels = [f['fuel'] for f in self.data_service.table_18_1 if f['rho'] is not None and 'СНГ' not in f['fuel']]
-        self.road_fuel_combobox.addItems(road_fuels)
+        self.road_fuel_combobox.addItems(self.data_service.get_transport_fuel_names_18_1())
         layout.addRow("Вид топлива:", self.road_fuel_combobox)
 
-        self.road_consumption_input = QLineEdit()
-        road_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        road_validator.setLocale(self.c_locale)
-        self.road_consumption_input.setValidator(road_validator)
+        self.road_consumption_input = self._create_line_edit((0.0, 1e9, 6))
         layout.addRow("Расход топлива:", self.road_consumption_input)
-        
-        self.road_unit_mass_radio = QRadioButton("тонны")
-        self.road_unit_volume_radio = QRadioButton("литры")
+
+        self.road_unit_mass_radio = QRadioButton("Тонны")
+        self.road_unit_volume_radio = QRadioButton("Литры")
         self.road_unit_mass_radio.setChecked(True)
-        layout.addRow(self.road_unit_mass_radio, self.road_unit_volume_radio)
+        layout.addRow("Единицы измерения:", self.road_unit_mass_radio)
+        layout.addRow("", self.road_unit_volume_radio)
 
         return widget
 
     def _create_railway_transport_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
-
+        
         self.rail_fuel_combobox = QComboBox()
-        rail_fuels = [f['fuel'] for f in self.data_service.table_18_1 if f['fuel'] in ['Дизельное топливо летнее', 'Дизельное топливо зимнее', 'Дизельное топливо арктическое', 'Сжиженный природный газ (СПГ)', 'Топочный мазут'] or 'уголь' in f['fuel'].lower()]
+        # Обычно дизельное топливо
+        rail_fuels = [f for f in self.data_service.get_transport_fuel_names_18_1() if "дизельное" in f.lower()]
         self.rail_fuel_combobox.addItems(rail_fuels)
         layout.addRow("Вид топлива:", self.rail_fuel_combobox)
-        
-        self.rail_consumption_input = QLineEdit()
-        rail_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        rail_validator.setLocale(self.c_locale)
-        self.rail_consumption_input.setValidator(rail_validator)
-        layout.addRow("Расход топлива (тонн):", self.rail_consumption_input)
 
+        self.rail_consumption_input = self._create_line_edit((0.0, 1e9, 6))
+        layout.addRow("Расход топлива (тонн):", self.rail_consumption_input)
+        
         return widget
 
     def _create_water_transport_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
-
+        
         self.water_fuel_combobox = QComboBox()
-        water_fuels = [f['fuel'] for f in self.data_service.table_18_1 if f['fuel'] in ['Мазут флотский', 'Дизельное топливо летнее', 'Дизельное топливо зимнее', 'Дизельное топливо арктическое', 'Газ сжиженный']]
+        water_fuels = [f for f in self.data_service.get_transport_fuel_names_18_1() if any(sub in f.lower() for sub in ["мазут", "дизельное", "флотский"])]
         self.water_fuel_combobox.addItems(water_fuels)
         layout.addRow("Вид топлива:", self.water_fuel_combobox)
-        
-        self.water_consumption_input = QLineEdit()
-        water_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        water_validator.setLocale(self.c_locale)
-        self.water_consumption_input.setValidator(water_validator)
+
+        self.water_consumption_input = self._create_line_edit((0.0, 1e9, 6))
         layout.addRow("Расход топлива (тонн):", self.water_consumption_input)
         
         return widget
@@ -110,53 +117,49 @@ class Category18Tab(QWidget):
     def _create_air_transport_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
-
+        
         self.air_fuel_combobox = QComboBox()
-        air_fuels = [f['fuel'] for f in self.data_service.table_18_1 if 'авиационный' in f['fuel'].lower() or 'реактивных' in f['fuel'].lower()]
+        air_fuels = [f for f in self.data_service.get_transport_fuel_names_18_1() if any(sub in f.lower() for sub in ["авиационный", "топливо тс-1"])]
         self.air_fuel_combobox.addItems(air_fuels)
         layout.addRow("Вид топлива:", self.air_fuel_combobox)
-        
-        self.air_consumption_input = QLineEdit()
-        air_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        air_validator.setLocale(self.c_locale)
-        self.air_consumption_input.setValidator(air_validator)
+
+        self.air_consumption_input = self._create_line_edit((0.0, 1e9, 6))
         layout.addRow("Расход топлива (тонн):", self.air_consumption_input)
         
         return widget
 
+    def _get_float(self, line_edit, field_name):
+        text = line_edit.text().replace(',', '.')
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не может быть пустым.")
+        return float(text)
+
     def _perform_calculation(self):
         try:
-            current_index = self.transport_type_combobox.currentIndex()
+            current_transport_index = self.transport_type_combobox.currentIndex()
             co2_emissions = 0.0
 
-            if current_index == 0: # Автомобильный
-                fuel = self.road_fuel_combobox.currentText()
-                consumption_str = self.road_consumption_input.text().replace(',', '.')
-                if not consumption_str: raise ValueError("Введите расход топлива.")
-                consumption = float(consumption_str)
+            if current_transport_index == 0: # Автомобильный
+                fuel_name = self.road_fuel_combobox.currentText()
+                consumption = self._get_float(self.road_consumption_input, "Расход топлива")
                 is_volume = self.road_unit_volume_radio.isChecked()
-                co2_emissions = self.calculator.calculate_road_transport_emissions(fuel, consumption, is_volume)
+                co2_emissions = self.calculator.calculate_road_transport_emissions(fuel_name, consumption, is_volume)
+
+            elif current_transport_index == 1: # Железнодорожный
+                fuel_name = self.rail_fuel_combobox.currentText()
+                consumption = self._get_float(self.rail_consumption_input, "Расход топлива")
+                co2_emissions = self.calculator.calculate_railway_transport_emissions(fuel_name, consumption)
+
+            elif current_transport_index == 2: # Водный
+                fuel_name = self.water_fuel_combobox.currentText()
+                consumption = self._get_float(self.water_consumption_input, "Расход топлива")
+                # Для упрощения UI не запрашиваем CF_TCE и CF_NCV, т.к. калькулятор их пересчитывает в NCV
+                co2_emissions = self.calculator.calculate_water_transport_emissions(fuel_name, consumption, 0, 0)
             
-            elif current_index == 1: # Железнодорожный
-                fuel = self.rail_fuel_combobox.currentText()
-                consumption_str = self.rail_consumption_input.text().replace(',', '.')
-                if not consumption_str: raise ValueError("Введите расход топлива.")
-                consumption = float(consumption_str)
-                co2_emissions = self.calculator.calculate_railway_transport_emissions(fuel, consumption)
-
-            elif current_index == 2: # Водный
-                fuel = self.water_fuel_combobox.currentText()
-                consumption_str = self.water_consumption_input.text().replace(',', '.')
-                if not consumption_str: raise ValueError("Введите расход топлива.")
-                consumption = float(consumption_str)
-                co2_emissions = self.calculator.calculate_water_transport_emissions(fuel, consumption)
-
-            elif current_index == 3: # Воздушный
-                fuel = self.air_fuel_combobox.currentText()
-                consumption_str = self.air_consumption_input.text().replace(',', '.')
-                if not consumption_str: raise ValueError("Введите расход топлива.")
-                consumption = float(consumption_str)
-                co2_emissions = self.calculator.calculate_air_transport_emissions(fuel, consumption)
+            elif current_transport_index == 3: # Воздушный
+                fuel_name = self.air_fuel_combobox.currentText()
+                consumption = self._get_float(self.air_consumption_input, "Расход топлива")
+                co2_emissions = self.calculator.calculate_air_transport_emissions(fuel_name, consumption)
 
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 

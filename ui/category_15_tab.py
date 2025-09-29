@@ -1,5 +1,6 @@
 # ui/category_15_tab.py - Виджет вкладки для расчетов по Категории 15.
 # Реализует интерфейс для метода углеродного баланса при производстве ферросплавов.
+# Код написан полностью, без сокращений.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -127,7 +128,8 @@ class Category15Tab(QWidget):
         
         row_data = {'widget': row_widget, 'combo': combo, 'input': line_edit}
         storage_list.append(row_data)
-        target_layout.addWidget(row_widget)
+        # Вставляем новую строку перед кнопкой "Добавить"
+        target_layout.insertWidget(target_layout.count() - 1, row_widget)
         
         remove_button.clicked.connect(lambda: self._remove_row(row_data, target_layout, storage_list))
 
@@ -137,25 +139,31 @@ class Category15Tab(QWidget):
         row_widget.deleteLater()
         storage_list.remove(row_data)
 
+    def _get_float(self, line_edit, field_name):
+        text = line_edit.text().replace(',', '.')
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не может быть пустым.")
+        return float(text)
+
     def _perform_calculation(self):
         try:
-            def collect_data(storage_list, key_name):
+            def collect_data(storage_list, key_name, list_name):
                 items = []
-                for row in storage_list:
+                for i, row in enumerate(storage_list):
                     name = row['combo'].currentText()
-                    value_str = row['input'].text().replace(',', '.')
-                    if not value_str:
-                        raise ValueError(f"Не заполнено поле для '{name}'")
-                    items.append({'name': name, key_name: float(value_str)})
+                    value = self._get_float(row['input'], f"{list_name}, строка {i+1}")
+                    items.append({'name': name, key_name: value})
                 return items
 
-            raw_materials = collect_data(self.raw_material_rows, 'consumption')
-            fuels = collect_data(self.fuel_rows, 'consumption')
-            products = collect_data(self.product_rows, 'production')
-            by_products = collect_data(self.by_product_rows, 'production')
+            raw_materials = collect_data(self.raw_material_rows, 'consumption', "Сырье и восстановители")
+            fuels = collect_data(self.fuel_rows, 'consumption', "Топливо")
+            products = collect_data(self.product_rows, 'production', "Основная продукция")
+            by_products = collect_data(self.by_product_rows, 'production', "Сопутствующая продукция")
 
-            if not raw_materials:
-                raise ValueError("Добавьте хотя бы один вид сырья/восстановителя.")
+            if not raw_materials and not fuels:
+                raise ValueError("Добавьте хотя бы один входящий поток (сырье или топливо).")
+            if not products:
+                raise ValueError("Добавьте хотя бы один вид основной продукции.")
 
             co2_emissions = self.calculator.calculate_emissions(
                 raw_materials, fuels, products, by_products
@@ -165,6 +173,7 @@ class Category15Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

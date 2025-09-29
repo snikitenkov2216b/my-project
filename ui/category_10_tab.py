@@ -1,5 +1,6 @@
-# ui/category_10_tab.py - Виджет вкладки для расчетов по КатегоGрии 10.
+# ui/category_10_tab.py - Виджет вкладки для расчетов по Категории 10.
 # Реализует интерфейс для ввода данных по производству аммиака.
+# Код написан полностью, без сокращений.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -32,7 +33,6 @@ class Category10Tab(QWidget):
 
         # 1. Выбор сырья (топлива)
         self.feedstock_combobox = QComboBox()
-        # Сырьем могут выступать различные виды топлива
         feedstock_list = self.data_service.get_fuels_table_1_1()
         self.feedstock_combobox.addItems(feedstock_list)
         self.feedstock_combobox.currentIndexChanged.connect(self._update_units)
@@ -74,24 +74,22 @@ class Category10Tab(QWidget):
         """Обновляет текст с единицами измерения в зависимости от выбранного сырья."""
         selected_feedstock = self.feedstock_combobox.currentText()
         feedstock_data = self.data_service.get_fuel_data_table_1_1(selected_feedstock)
-        if feedstock_data and 'unit' in feedstock_data:
-            self.units_label.setText(f"({feedstock_data['unit']})")
-        else:
-            self.units_label.setText("")
+        unit_text = f"({feedstock_data.get('unit', '')})" if feedstock_data else ""
+        self.units_label.setText(unit_text)
+
+    def _get_float(self, line_edit, field_name):
+        """Вспомогательная функция для получения числового значения из поля ввода."""
+        text = line_edit.text().replace(',', '.')
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не может быть пустым.")
+        return float(text)
 
     def _perform_calculation(self):
         """Выполняет расчет на основе введенных данных."""
         try:
             feedstock_name = self.feedstock_combobox.currentText()
-            
-            consumption_str = self.feedstock_consumption_input.text().replace(',', '.')
-            recovered_co2_str = self.recovered_co2_input.text().replace(',', '.')
-            
-            if not consumption_str:
-                raise ValueError("Введите расход сырья.")
-            
-            consumption = float(consumption_str)
-            recovered_co2 = float(recovered_co2_str) if recovered_co2_str else 0.0
+            consumption = self._get_float(self.feedstock_consumption_input, "Расход сырья")
+            recovered_co2 = self._get_float(self.recovered_co2_input, "Масса уловленного CO2")
 
             co2_emissions = self.calculator.calculate_emissions(
                 feedstock_name=feedstock_name,

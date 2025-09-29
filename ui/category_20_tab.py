@@ -1,158 +1,203 @@
 # ui/category_20_tab.py - Виджет вкладки для расчетов по Категории 20.
 # Реализует интерфейс для захоронения и биологической переработки отходов.
+# Код написан полностью, без сокращений.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
-    QPushButton, QLabel, QMessageBox, QStackedWidget, QTextEdit
+    QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox, QScrollArea, QTextEdit
 )
-from PyQt6.QtGui import QDoubleValidator, QIntValidator
-from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
+from PyQt6.QtGui import QDoubleValidator
+from PyQt6.QtCore import Qt, QLocale
 
 from data_models import DataService
 from calculations.category_20 import Category20Calculator
 
 class Category20Tab(QWidget):
     """
-    Класс виджета-вкладки для Категории 20 "Захоронение твердых отходов".
+    Класс виджета-вкладки для Категории 20 "Захоронение и биологическая переработка твердых отходов".
     """
     def __init__(self, data_service: DataService, parent=None):
         super().__init__(parent)
         self.data_service = data_service
         self.calculator = Category20Calculator(self.data_service)
+        
+        self.landfill_historical_rows = []
+
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Создаем локаль один раз для всего класса
-        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
-
-        # --- Выбор типа расчета ---
-        self.calc_type_combobox = QComboBox()
-        self.calc_type_combobox.addItems([
-            "Захоронение отходов (расчет CH4)",
-            "Биологическая переработка (расчет CH4 и N2O)"
+        method_layout = QFormLayout()
+        self.method_combobox = QComboBox()
+        self.method_combobox.addItems([
+            "Захоронение твердых отходов (Метод ЗПП)",
+            "Биологическая переработка отходов"
         ])
-        main_layout.addWidget(QLabel("Выберите тип процесса:"))
-        main_layout.addWidget(self.calc_type_combobox)
-
-        # --- Стек виджетов ---
+        method_layout.addRow("Выберите тип процесса:", self.method_combobox)
+        main_layout.addLayout(method_layout)
+        
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_landfill_widget())
         self.stacked_widget.addWidget(self._create_biological_treatment_widget())
         main_layout.addWidget(self.stacked_widget)
-
-        self.calc_type_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
-
-        # --- Кнопка и результат ---
+        
+        self.method_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
+        
         self.calculate_button = QPushButton("Рассчитать выбросы")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
 
-        self.result_display = QTextEdit()
-        self.result_display.setReadOnly(True)
-        self.result_display.setPlaceholderText("Результаты появятся здесь...")
-        main_layout.addWidget(self.result_display)
+        self.result_label = QTextEdit()
+        self.result_label.setReadOnly(True)
+        self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.result_label.setText("Результат:...")
+        main_layout.addWidget(self.result_label)
+
+    def _create_scrollable_widget(self):
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scroll_area.setWidget(widget)
+        return scroll_area, layout
 
     def _create_landfill_widget(self):
-        widget = QWidget()
-        layout = QFormLayout(widget)
+        scroll_area, layout = self._create_scrollable_widget()
 
-        self.waste_mass_input = QLineEdit("100")
-        waste_mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        waste_mass_validator.setLocale(self.c_locale)
-        self.waste_mass_input.setValidator(waste_mass_validator)
-        layout.addRow("Ежегодная масса отходов (Гг/год):", self.waste_mass_input)
+        params_group = QGroupBox("Параметры модели затухания первого порядка (ЗПП)")
+        params_layout = QFormLayout(params_group)
 
-        self.doc_input = QLineEdit("0.15")
-        doc_validator = QDoubleValidator(0.0, 1.0, 4, self)
-        doc_validator.setLocale(self.c_locale)
-        self.doc_input.setValidator(doc_validator)
-        layout.addRow("Доля DOC в отходах (доля):", self.doc_input)
-        
-        self.doc_f_input = QLineEdit("0.5")
-        doc_f_validator = QDoubleValidator(0.0, 1.0, 4, self)
-        doc_f_validator.setLocale(self.c_locale)
-        self.doc_f_input.setValidator(doc_f_validator)
-        layout.addRow("Доля разлагаемого DOC (DOCf, доля):", self.doc_f_input)
+        self.landfill_doc_input = self._create_line_edit((0.0, 1.0, 6), "0.15")
+        params_layout.addRow("Доля разлагаемого углерода (DOC, доля):", self.landfill_doc_input)
+        self.landfill_docf_input = self._create_line_edit((0.0, 1.0, 6), "0.5")
+        params_layout.addRow("Доля DOC, способного к разложению (DOCf, доля):", self.landfill_docf_input)
+        self.landfill_mcf_input = self._create_line_edit((0.0, 1.0, 6), "1.0")
+        params_layout.addRow("Поправочный коэффициент для метана (MCF, доля):", self.landfill_mcf_input)
+        self.landfill_f_input = self._create_line_edit((0.0, 1.0, 6), "0.5")
+        params_layout.addRow("Доля CH4 в свалочном газе (F, доля):", self.landfill_f_input)
+        self.landfill_k_input = self._create_line_edit((0.0, 1.0, 6), "0.05")
+        params_layout.addRow("Постоянная реакции разложения (k, 1/год):", self.landfill_k_input)
+        self.landfill_r_input = self._create_line_edit((0.0, 1e9, 6), "0.0")
+        params_layout.addRow("Рекуперированный CH4 (R, Гг/год):", self.landfill_r_input)
+        self.landfill_ox_input = self._create_line_edit((0.0, 1.0, 6), "0.0")
+        params_layout.addRow("Коэффициент окисления (OX, доля):", self.landfill_ox_input)
+        layout.addWidget(params_group)
 
-        self.mcf_combobox = QComboBox()
-        self.mcf_combobox.addItems([f"{item['type']} ({item['MCF']})" for item in self.data_service.table_20_5])
-        layout.addRow("Тип объекта (MCF):", self.mcf_combobox)
+        history_group = QGroupBox("Данные о захоронении отходов (в хронологическом порядке)")
+        self.landfill_history_layout = QVBoxLayout(history_group)
+        add_btn = QPushButton("Добавить год")
+        add_btn.clicked.connect(self._add_landfill_history_row)
+        self.landfill_history_layout.addWidget(add_btn)
+        layout.addWidget(history_group)
 
-        self.f_input = QLineEdit("0.5")
-        f_validator = QDoubleValidator(0.0, 1.0, 4, self)
-        f_validator.setLocale(self.c_locale)
-        self.f_input.setValidator(f_validator)
-        layout.addRow("Доля CH4 в свалочном газе (F, доля):", self.f_input)
-        
-        self.k_input = QLineEdit("0.05")
-        k_validator = QDoubleValidator(0.0, 1.0, 4, self)
-        k_validator.setLocale(self.c_locale)
-        self.k_input.setValidator(k_validator)
-        layout.addRow("Постоянная реакции (k, 1/год):", self.k_input)
-        
-        self.years_input = QLineEdit("20")
-        self.years_input.setValidator(QIntValidator(1, 100, self))
-        layout.addRow("Период расчета (лет):", self.years_input)
-        
-        return widget
+        return scroll_area
 
     def _create_biological_treatment_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
-        
+
         self.bio_treatment_type_combobox = QComboBox()
         self.bio_treatment_type_combobox.addItems(self.data_service.get_biological_treatment_types_table_21_1())
         layout.addRow("Тип переработки:", self.bio_treatment_type_combobox)
-        
-        self.bio_waste_mass_input = QLineEdit()
-        bio_waste_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        bio_waste_validator.setLocale(self.c_locale)
-        self.bio_waste_mass_input.setValidator(bio_waste_validator)
+
+        self.bio_waste_mass_input = self._create_line_edit((0.0, 1e9, 6))
         layout.addRow("Масса отходов (тонн, сырой вес):", self.bio_waste_mass_input)
 
         return widget
 
+    def _add_landfill_history_row(self):
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        
+        year_label = QLabel(f"Год {len(self.landfill_historical_rows) + 1}:")
+        mass_input = QLineEdit()
+        mass_input.setPlaceholderText("Масса отходов, Гг")
+        mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        
+        remove_button = QPushButton("Удалить")
+        
+        row_layout.addWidget(year_label)
+        row_layout.addWidget(mass_input)
+        row_layout.addWidget(remove_button)
+        
+        row_data = {'widget': row_widget, 'mass_input': mass_input}
+        self.landfill_historical_rows.append(row_data)
+        self.landfill_history_layout.insertWidget(self.landfill_history_layout.count() - 1, row_widget)
+        remove_button.clicked.connect(lambda: self._remove_row(row_data, self.landfill_history_layout, self.landfill_historical_rows))
+
+    def _remove_row(self, row_data, layout, storage):
+        row_widget = row_data['widget']
+        layout.removeWidget(row_widget)
+        row_widget.deleteLater()
+        storage.remove(row_data)
+        # Обновляем нумерацию годов
+        if storage is self.landfill_historical_rows:
+            for i, row in enumerate(storage):
+                row['widget'].findChild(QLabel).setText(f"Год {i+1}:")
+
+    def _create_line_edit(self, validator_params, default_text=""):
+        line_edit = QLineEdit(default_text)
+        validator = QDoubleValidator(*validator_params, self)
+        validator.setLocale(self.c_locale)
+        line_edit.setValidator(validator)
+        return line_edit
+
+    def _get_float(self, line_edit, field_name):
+        text = line_edit.text().replace(',', '.')
+        if not text: raise ValueError(f"Поле '{field_name}' не заполнено.")
+        return float(text)
+
     def _perform_calculation(self):
         try:
-            current_index = self.calc_type_combobox.currentIndex()
+            method_index = self.method_combobox.currentIndex()
             
-            if current_index == 0: # Захоронение
-                waste_mass = float(self.waste_mass_input.text().replace(',', '.'))
-                doc = float(self.doc_input.text().replace(',', '.'))
-                doc_f = float(self.doc_f_input.text().replace(',', '.'))
-                mcf_text = self.mcf_combobox.currentText()
-                mcf = float(mcf_text[mcf_text.rfind('(')+1:-1])
-                f = float(self.f_input.text().replace(',', '.'))
-                k = float(self.k_input.text().replace(',', '.'))
-                years = int(self.years_input.text())
+            if method_index == 0: # Захоронение ТКО
+                if not self.landfill_historical_rows:
+                    raise ValueError("Добавьте данные о захоронении хотя бы за один год.")
 
-                emissions = self.calculator.calculate_landfill_ch4_emissions(waste_mass, doc, doc_f, mcf, f, k, years)
+                doc = self._get_float(self.landfill_doc_input, "DOC")
+                doc_f = self._get_float(self.landfill_docf_input, "DOCf")
+                mcf = self._get_float(self.landfill_mcf_input, "MCF")
+                f = self._get_float(self.landfill_f_input, "F")
+                k = self._get_float(self.landfill_k_input, "k")
+                R = self._get_float(self.landfill_r_input, "R")
+                OX = self._get_float(self.landfill_ox_input, "OX")
                 
-                result_text = "Ежегодные выбросы CH4 (тонн):\n"
-                for i, val in enumerate(emissions, 1):
-                    result_text += f"Год {i}: {val:.4f}\n"
-                self.result_display.setText(result_text)
+                historical_waste = []
+                for i, row in enumerate(self.landfill_historical_rows):
+                    mass = self._get_float(row['mass_input'], f"Масса отходов за Год {i+1}")
+                    historical_waste.append(mass)
 
-            elif current_index == 1: # Био-переработка
-                waste_mass_str = self.bio_waste_mass_input.text().replace(',', '.')
-                if not waste_mass_str: raise ValueError("Введите массу отходов.")
-                waste_mass = float(waste_mass_str)
+                emissions_list = self.calculator.calculate_landfill_ch4_emissions(
+                    historical_waste, doc, doc_f, mcf, f, k, R, OX
+                )
+                
+                result_text = "Результат (выбросы CH4 в тоннах):\n"
+                for year, emission in enumerate(emissions_list, 1):
+                    result_text += f"Год {year}: {emission:.4f}\n"
+                self.result_label.setText(result_text)
+
+            elif method_index == 1: # Биологическая переработка
+                waste_mass = self._get_float(self.bio_waste_mass_input, "Масса отходов")
                 treatment_type = self.bio_treatment_type_combobox.currentText()
                 
                 emissions = self.calculator.calculate_biological_treatment_emissions(waste_mass, treatment_type)
                 
                 result_text = (
+                    f"Результат:\n"
                     f"Выбросы CH4: {emissions['ch4']:.4f} тонн\n"
                     f"Выбросы N2O: {emissions['n2o']:.4f} тонн"
                 )
-                self.result_display.setText(result_text)
+                self.result_label.setText(result_text)
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
-            self.result_display.setText(f"Критическая ошибка: {e}")
+            self.result_label.setText(f"Результат: Ошибка - {e}")

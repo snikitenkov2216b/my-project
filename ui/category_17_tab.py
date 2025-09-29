@@ -1,5 +1,6 @@
 # ui/category_17_tab.py - Виджет вкладки для расчетов по Категории 17.
 # Реализует интерфейс для прочих промышленных процессов.
+# Код написан полностью, без сокращений.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -62,84 +63,98 @@ class Category17Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-    def _create_fuel_use_widget(self):
+    def _create_scrollable_widget(self):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scroll_area.setWidget(widget)
+        return scroll_area, layout
+
+    def _create_fuel_use_widget(self):
+        scroll_area, layout = self._create_scrollable_widget()
         
         fuels_group = QGroupBox("Использованное топливо")
         self.fuel_use_fuels_layout = QVBoxLayout(fuels_group)
         add_fuel_btn = QPushButton("Добавить топливо")
         add_fuel_btn.clicked.connect(self._add_fuel_use_fuel_row)
+        self.fuel_use_fuels_layout.addWidget(add_fuel_btn)
         layout.addWidget(fuels_group)
-        layout.addWidget(add_fuel_btn)
 
         products_group = QGroupBox("Продукция, в которой связан углерод")
         self.fuel_use_products_layout = QVBoxLayout(products_group)
         add_product_btn = QPushButton("Добавить продукцию")
         add_product_btn.clicked.connect(self._add_fuel_use_product_row)
+        self.fuel_use_products_layout.addWidget(add_product_btn)
         layout.addWidget(products_group)
-        layout.addWidget(add_product_btn)
 
-        scroll_area.setWidget(widget)
         return scroll_area
 
     def _create_reductants_widget(self):
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+        scroll_area, layout = self._create_scrollable_widget()
         group = QGroupBox("Использованные восстановители")
         self.reductants_layout = QVBoxLayout(group)
         add_btn = QPushButton("Добавить восстановитель")
         add_btn.clicked.connect(self._add_reductant_row)
+        self.reductants_layout.addWidget(add_btn)
         layout.addWidget(group)
-        layout.addWidget(add_btn)
-        return widget
+        return scroll_area
 
     def _create_carbonates_widget(self):
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+        scroll_area, layout = self._create_scrollable_widget()
         group = QGroupBox("Использованные карбонаты")
         self.carbonates_layout = QVBoxLayout(group)
         add_btn = QPushButton("Добавить карбонат")
         add_btn.clicked.connect(self._add_carbonate_row)
+        self.carbonates_layout.addWidget(add_btn)
         layout.addWidget(group)
-        layout.addWidget(add_btn)
-        return widget
+        return scroll_area
 
     # --- Методы для добавления/удаления строк ---
     def _add_fuel_use_fuel_row(self):
-        items = self.data_service.get_fuels_table_1_1()
-        self._create_dynamic_row("Расход", self.fuel_use_fuels_layout, self.fuel_use_fuels, items)
+        self._create_dynamic_row(self.fuel_use_fuels, self.fuel_use_fuels_layout, 
+                                 self.data_service.get_fuels_table_1_1(), 
+                                 [('consumption', 'Расход', (0.0, 1e9, 6))])
 
     def _add_fuel_use_product_row(self):
-        items = self.data_service.get_fuels_table_1_1() # Продукты часто те же, что и топливо
-        self._create_dynamic_row("Производство, т", self.fuel_use_products_layout, self.fuel_use_products, items)
+        self._create_dynamic_row(self.fuel_use_products, self.fuel_use_products_layout, 
+                                 self.data_service.get_fuels_table_1_1(), 
+                                 [('production', 'Производство, т', (0.0, 1e9, 6))])
 
     def _add_reductant_row(self):
-        items = self.data_service.get_fuels_table_1_1() # Восстановители - это виды топлива
-        self._create_dynamic_row("Расход, т", self.reductants_layout, self.reductants, items)
+        self._create_dynamic_row(self.reductants, self.reductants_layout, 
+                                 self.data_service.get_fuels_table_1_1(), 
+                                 [('consumption', 'Расход, т', (0.0, 1e9, 6))])
 
     def _add_carbonate_row(self):
-        items = self.data_service.get_carbonate_formulas_table_6_1()
-        self._create_dynamic_row("Масса, т", self.carbonates_layout, self.carbonates, items)
+        self._create_dynamic_row(self.carbonates, self.carbonates_layout, 
+                                 self.data_service.get_carbonate_formulas_table_6_1(), 
+                                 [('mass', 'Масса, т', (0.0, 1e9, 6))])
 
-    def _create_dynamic_row(self, placeholder, layout, storage, items):
+    def _create_dynamic_row(self, storage, layout, items, fields):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
+        row_data = {'widget': row_widget}
+        
         combo = QComboBox()
         combo.addItems(items)
-        line_edit = QLineEdit(placeholderText=placeholder)
-        validator = QDoubleValidator(0.0, 1e9, 6, self)
-        validator.setLocale(self.c_locale)
-        line_edit.setValidator(validator)
-        remove_button = QPushButton("Удалить")
         row_layout.addWidget(combo)
-        row_layout.addWidget(line_edit)
+        row_data['combo'] = combo
+        
+        for key, placeholder, params in fields:
+            editor = QLineEdit(placeholderText=placeholder)
+            validator = QDoubleValidator(*params, self)
+            validator.setLocale(self.c_locale)
+            editor.setValidator(validator)
+            row_layout.addWidget(editor)
+            row_data[key] = editor
+            
+        remove_button = QPushButton("Удалить")
         row_layout.addWidget(remove_button)
-        row_data = {'widget': row_widget, 'combo': combo, 'input': line_edit}
+        
         storage.append(row_data)
-        layout.addWidget(row_widget)
+        layout.insertWidget(layout.count() - 1, row_widget)
         remove_button.clicked.connect(lambda: self._remove_row(row_data, layout, storage))
 
     def _remove_row(self, row_data, layout, storage):
@@ -148,43 +163,42 @@ class Category17Tab(QWidget):
         row_widget.deleteLater()
         storage.remove(row_data)
 
+    def _get_float(self, line_edit, field_name):
+        text = line_edit.text().replace(',', '.')
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не может быть пустым.")
+        return float(text)
+
     def _perform_calculation(self):
         try:
             method_index = self.method_combobox.currentIndex()
             co2_emissions = 0.0
 
+            def collect_data(storage_list, key_name, list_name):
+                items = []
+                for i, row in enumerate(storage_list):
+                    name = row['combo'].currentText()
+                    value = self._get_float(row[key_name], f"{list_name} для '{name}' (строка {i+1})")
+                    items.append({'name': name, key_name: value})
+                return items
+
             if method_index == 0: # Неэнергетическое использование
-                def collect_data(storage_list, key_name):
-                    items = []
-                    for row in storage_list:
-                        name = row['combo'].currentText()
-                        value_str = row['input'].text().replace(',', '.')
-                        if not value_str: raise ValueError(f"Не заполнено поле для '{name}'")
-                        items.append({'name': name, key_name: float(value_str)})
-                    return items
-                fuels = collect_data(self.fuel_use_fuels, 'consumption')
-                products = collect_data(self.fuel_use_products, 'production')
-                if not fuels: raise ValueError("Добавьте хотя бы один вид топлива.")
+                fuels = collect_data(self.fuel_use_fuels, 'consumption', "Расход топлива")
+                products = collect_data(self.fuel_use_products, 'production', "Производство продукции")
+                if not fuels:
+                    raise ValueError("Добавьте хотя бы один вид топлива.")
                 co2_emissions = self.calculator.calculate_from_fuel_use(fuels, products)
 
             elif method_index == 1: # Восстановители
-                reductants_data = []
-                for row in self.reductants:
-                    name = row['combo'].currentText()
-                    value_str = row['input'].text().replace(',', '.')
-                    if not value_str: raise ValueError(f"Не заполнено поле для '{name}'")
-                    reductants_data.append({'name': name, 'consumption': float(value_str)})
-                if not reductants_data: raise ValueError("Добавьте хотя бы один восстановитель.")
+                reductants_data = collect_data(self.reductants, 'consumption', "Расход восстановителя")
+                if not reductants_data:
+                    raise ValueError("Добавьте хотя бы один восстановитель.")
                 co2_emissions = self.calculator.calculate_from_reductants(reductants_data)
             
             elif method_index == 2: # Карбонаты
-                carbonates_data = []
-                for row in self.carbonates:
-                    name = row['combo'].currentText()
-                    value_str = row['input'].text().replace(',', '.')
-                    if not value_str: raise ValueError(f"Не заполнено поле для '{name}'")
-                    carbonates_data.append({'name': name, 'mass': float(value_str)})
-                if not carbonates_data: raise ValueError("Добавьте хотя бы один карбонат.")
+                carbonates_data = collect_data(self.carbonates, 'mass', "Масса карбоната")
+                if not carbonates_data:
+                    raise ValueError("Добавьте хотя бы один карбонат.")
                 co2_emissions = self.calculator.calculate_from_carbonates(carbonates_data)
 
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")

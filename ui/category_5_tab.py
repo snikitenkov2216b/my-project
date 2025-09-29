@@ -1,5 +1,6 @@
 # ui/category_5_tab.py - Виджет вкладки для расчетов по Категории 5.
 # Реализует динамический интерфейс для метода углеродного баланса.
+# Код написан полностью, без сокращений и упрощений.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -25,6 +26,7 @@ class Category5Tab(QWidget):
         self.fuel_rows = []
         self.by_product_rows = []
 
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
     def _init_ui(self):
@@ -37,11 +39,9 @@ class Category5Tab(QWidget):
         scroll_area.setWidget(main_widget)
         main_layout.addWidget(scroll_area)
 
-        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
-
         # --- Блок входящих потоков ---
         inputs_group = QGroupBox("Входящие потоки (Сырье и Топливо)")
-        inputs_layout = QVBoxLayout()
+        inputs_layout = QVBoxLayout(inputs_group)
 
         inputs_layout.addWidget(QLabel("Сырье (коксующиеся угли):"))
         self.raw_materials_layout = QVBoxLayout()
@@ -57,12 +57,11 @@ class Category5Tab(QWidget):
         inputs_layout.addLayout(self.fuels_layout)
         inputs_layout.addWidget(add_fuel_button, alignment=Qt.AlignmentFlag.AlignLeft)
         
-        inputs_group.setLayout(inputs_layout)
         form_container_layout.addWidget(inputs_group)
 
         # --- Блок выходящих потоков ---
         outputs_group = QGroupBox("Выходящие потоки (Продукция)")
-        outputs_layout = QVBoxLayout()
+        outputs_layout = QVBoxLayout(outputs_group)
 
         main_product_layout = QFormLayout()
         self.main_product_consumption = QLineEdit()
@@ -123,7 +122,6 @@ class Category5Tab(QWidget):
         storage_list.remove(row_data)
 
     def _add_raw_material_row(self):
-        # Сырьем для кокса обычно являются коксующиеся угли
         items = [f for f in self.data_service.get_fuels_table_1_1() if "уголь" in f.lower()]
         self._create_dynamic_row("Расход сырья, т", self.raw_materials_layout, self.raw_material_rows, items)
 
@@ -132,32 +130,36 @@ class Category5Tab(QWidget):
         self._create_dynamic_row("Расход топлива", self.fuels_layout, self.fuel_rows, items)
 
     def _add_by_product_row(self):
-        # Побочные продукты - это могут быть газы, смолы и т.д.
         items = self.data_service.get_fuels_table_1_1()
         self._create_dynamic_row("Выход продукта", self.by_products_layout, self.by_product_rows, items)
 
+    def _get_float(self, line_edit, field_name):
+        text = line_edit.text().replace(',', '.')
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не может быть пустым.")
+        return float(text)
+
     def _perform_calculation(self):
         try:
-            def collect_data(storage_list, key_name):
+            def collect_data(storage_list, key_name, list_name):
                 items = []
-                for row in storage_list:
+                for i, row in enumerate(storage_list):
                     name = row['combo'].currentText()
-                    value_str = row['input'].text().replace(',', '.')
-                    if not value_str:
-                        raise ValueError(f"Не заполнено поле для '{name}'")
-                    items.append({'name': name, key_name: float(value_str)})
+                    value = self._get_float(row['input'], f"{list_name}, строка {i+1}")
+                    items.append({'name': name, key_name: value})
                 return items
 
-            raw_materials = collect_data(self.raw_material_rows, 'consumption')
-            fuels = collect_data(self.fuel_rows, 'consumption')
-            by_products = collect_data(self.by_product_rows, 'production')
+            raw_materials = collect_data(self.raw_material_rows, 'consumption', "Сырье")
+            fuels = collect_data(self.fuel_rows, 'consumption', "Топливо")
+            by_products = collect_data(self.by_product_rows, 'production', "Сопутствующая продукция")
+            
+            if not raw_materials:
+                raise ValueError("Добавьте хотя бы один вид сырья.")
 
-            main_prod_str = self.main_product_consumption.text().replace(',', '.')
-            if not main_prod_str:
-                raise ValueError("Не заполнено поле 'Производство кокса'")
+            main_prod_value = self._get_float(self.main_product_consumption, "Производство кокса")
             main_product = {
                 'name': 'Кокс металлургический',
-                'production': float(main_prod_str)
+                'production': main_prod_value
             }
 
             co2_emissions = self.calculator.calculate_emissions(
@@ -168,6 +170,7 @@ class Category5Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")
