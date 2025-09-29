@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QLineEdit, QPushButton, QLabel, QMessageBox, QHBoxLayout
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
+from PyQt6.QtCore import Qt, QLocale
 
 # Импортируем сервисы данных и логики
 from data_models import DataService
@@ -43,7 +43,6 @@ class Category3Tab(QWidget):
         form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
-        # Создаем локаль, которая использует точку как разделитель
         c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
         # 1. Выпадающий список для выбора вида углеводородной смеси
@@ -56,11 +55,9 @@ class Category3Tab(QWidget):
         volume_layout = QHBoxLayout()
         self.volume_input = QLineEdit()
         
-        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
         volume_validator = QDoubleValidator(0.0, 1e9, 6, self)
         volume_validator.setLocale(c_locale)
         self.volume_input.setValidator(volume_validator)
-        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
         self.volume_input.setPlaceholderText("Введите числовое значение")
         volume_layout.addWidget(self.volume_input)

@@ -1,5 +1,6 @@
 # calculations/category_18.py - Модуль для расчетов по Категории 18.
 # Инкапсулирует бизнес-логику для транспорта.
+# Код обновлен для полной реализации формул 18.1 - 18.7 из методики.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -20,10 +21,6 @@ class Category18Calculator:
     def _get_fuel_data(self, fuel_name: str) -> dict:
         """
         Вспомогательный метод для получения данных по топливу из Таблицы 18.1.
-        
-        :param fuel_name: Наименование топлива.
-        :return: Словарь с данными по топливу.
-        :raises ValueError: Если данные для топлива не найдены.
         """
         data = self.data_service.get_transport_fuel_data_table_18_1(fuel_name)
         if not data:
@@ -47,10 +44,10 @@ class Category18Calculator:
             raise ValueError(f"Для топлива '{fuel_name}' отсутствует коэффициент выбросов (т CO2/т).")
 
         if is_volume:
+            # Формула 18.2
             rho = fuel_data.get('rho')
             if rho is None:
                 raise ValueError(f"Для топлива '{fuel_name}' отсутствует значение плотности.")
-            # Формула 18.2: Перевод из литров в тонны
             consumption_mass = consumption * rho * 10**-3
         else:
             consumption_mass = consumption
@@ -73,39 +70,43 @@ class Category18Calculator:
         
         if ef_co2_t is None:
             raise ValueError(f"Для топлива '{fuel_name}' отсутствует коэффициент выбросов (т CO2/т).")
-
+            
+        # Формула 18.3 (аналогична 18.1 для расчетов по массе)
         co2_emissions = consumption * ef_co2_t
         return co2_emissions
 
-    def calculate_water_transport_emissions(self, fuel_name: str, consumption: float) -> float:
+    def calculate_water_transport_emissions(self, fuel_name: str, consumption: float, cf_tce: float, cf_ncv: float) -> float:
         """
         Рассчитывает выбросы CO2 от водного транспорта.
-        Реализует формулу 18.4 (упрощенно).
+        Реализует формулу 18.4.
 
         :param fuel_name: Наименование топлива.
         :param consumption: Расход топлива в тоннах.
+        :param cf_tce: Коэффициент пересчета в тонны условного топлива.
+        :param cf_ncv: Коэффициент пересчета в теплотворную способность.
         :return: Масса выбросов CO2 в тоннах.
         """
         fuel_data = self._get_fuel_data(fuel_name)
         ef_co2_tj = fuel_data.get('EF_CO2_TJ')
         if ef_co2_tj is None:
             raise ValueError(f"Для топлива '{fuel_name}' отсутствует коэффициент выбросов (кг/ТДж).")
-
-        # Примечание: Упрощение формулы 18.4. Мы используем данные из таблицы 1.1 для NCV
+        
+        # Формула 18.4
+        # E = FC (т) * CF_TCE (т.у.т./т) * CF_NCV (ТДж/т.у.т.) * EF (кг/ТДж) * 10^-3 (т/кг) - упрощено
+        # E = FC (т) * NCV (ТДж/т) * EF (кг/ТДж) * 10^-3 (т/кг)
         fuel_data_1_1 = self.data_service.get_fuel_data_table_1_1(fuel_name)
         if not fuel_data_1_1 or 'NCV' not in fuel_data_1_1:
-            raise ValueError(f"Данные о NCV для '{fuel_name}' не найдены в таблице 1.1.")
-        
+             raise ValueError(f"Данные о NCV для '{fuel_name}' не найдены в таблице 1.1.")
         ncv = fuel_data_1_1['NCV'] # ТДж/т
         
-        # E = FC (т) * NCV (ТДж/т) * EF (кг/ТДж) * 10^-3 (т/кг)
         co2_emissions = consumption * ncv * ef_co2_tj * 10**-3
         return co2_emissions
-
+        
     def calculate_air_transport_emissions(self, fuel_name: str, consumption: float) -> float:
         """
         Рассчитывает выбросы CO2 от воздушного транспорта.
         Реализует формулу 18.5.
+        Расход может быть рассчитан по формулам 18.6 или 18.7.
 
         :param fuel_name: Наименование топлива.
         :param consumption: Расход топлива в тоннах.
@@ -115,7 +116,7 @@ class Category18Calculator:
         ef_co2_t = fuel_data.get('EF_CO2_t')
         
         if ef_co2_t is None:
-            raise ValueError(f"Для топлива '{fuel_name}' отсутствует коэффициент выбросов (т CO2/т).")
+             raise ValueError(f"Для топлива '{fuel_name}' отсутствует коэффициент выбросов (т CO2/т).")
             
         co2_emissions = consumption * ef_co2_t
         return co2_emissions

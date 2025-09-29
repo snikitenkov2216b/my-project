@@ -1,8 +1,13 @@
 # calculations/category_12.py - Модуль для расчетов по Категории 12.
 # Инкапсулирует бизнес-логику для нефтехимического производства.
+# Код обновлен для полной реализации формул 12.1 и 12.2 из методики.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+# Импортируем калькуляторы для других категорий для реализации формулы 12.2
+from calculations.category_1 import Category1Calculator
+from calculations.category_2 import Category2Calculator
+from calculations.category_3 import Category3Calculator
 
 class Category12Calculator:
     """
@@ -17,6 +22,11 @@ class Category12Calculator:
         """
         self.data_service = data_service
         self.CARBON_TO_CO2_FACTOR = 3.664
+        # Инициализируем калькуляторы других категорий для метода 12.2
+        self.cat1_calc = Category1Calculator(data_service)
+        self.cat2_calc = Category2Calculator(data_service)
+        self.cat3_calc = Category3Calculator(data_service)
+
 
     def _get_carbon_content(self, substance_name: str) -> float:
         """
@@ -27,12 +37,10 @@ class Category12Calculator:
         :return: Содержание углерода в долях (т C / т вещества).
         :raises ValueError: Если данные для вещества не найдены.
         """
-        # Сначала ищем в специализированной таблице 12.1
         data = self.data_service.get_petrochemical_substance_data_table_12_1(substance_name)
         if data and 'W_C' in data:
             return data['W_C']
         
-        # Если не найдено, ищем в общей топливной таблице 1.1
         data = self.data_service.get_fuel_data_table_1_1(substance_name)
         if data and 'W_C_ut' in data:
             return data['W_C_ut']
@@ -50,27 +58,51 @@ class Category12Calculator:
         :param by_products: Список словарей сопутствующей продукции. [{'name': str, 'production': float}]
         :return: Масса выбросов CO2 в тоннах.
         """
-        # --- Расчет входящего углерода (Carbon IN) ---
-        carbon_in = 0.0
-        for material in raw_materials:
-            w_c = self._get_carbon_content(material['name'])
-            carbon_in += material['consumption'] * w_c
+        # Входящий углерод
+        carbon_in = sum(m['consumption'] * self._get_carbon_content(m['name']) for m in raw_materials)
 
-        # --- Расчет выходящего углерода (Carbon OUT) ---
-        carbon_out = 0.0
-        
-        # Углерод в основной продукции
-        for product in primary_products:
-            w_c = self._get_carbon_content(product['name'])
-            carbon_out += product['production'] * w_c
-            
-        # Углерод в сопутствующей продукции
-        for product in by_products:
-            w_c = self._get_carbon_content(product['name'])
-            carbon_out += product['production'] * w_c
+        # Выходящий углерод
+        carbon_out_primary = sum(p['production'] * self._get_carbon_content(p['name']) for p in primary_products)
+        carbon_out_by_products = sum(b['production'] * self._get_carbon_content(b['name']) for b in by_products)
+        carbon_out = carbon_out_primary + carbon_out_by_products
 
-        # --- Расчет выбросов CO2 ---
         co2_emissions = (carbon_in - carbon_out) * self.CARBON_TO_CO2_FACTOR
         
-        # Выбросы не могут быть отрицательными
         return max(0, co2_emissions)
+
+    def calculate_emissions_by_source_categories(self, stationary_fuels: list, flare_gases: list, fugitive_gases: list) -> float:
+        """
+        Рассчитывает выбросы CO2 как сумму выбросов от отдельных категорий источников.
+        
+        Реализует формулу 12.2 из методических указаний.
+
+        :param stationary_fuels: Данные для расчета по Категории 1. [{'fuel_name': str, 'fuel_consumption': float, 'oxidation_factor': float}]
+        :param flare_gases: Данные для расчета по Категории 2. [{'gas_type': str, 'consumption': float, 'unit': str}]
+        :param fugitive_gases: Данные для расчета по Категории 3. [{'gas_type': str, 'volume': float}]
+        :return: Масса выбросов CO2 в тоннах.
+        """
+        # E_стац
+        e_co2_stationary = 0
+        for fuel in stationary_fuels:
+            fuel_data = self.data_service.get_fuel_data_table_1_1(fuel['fuel_name'])
+            ef_co2 = fuel_data.get('EF_CO2_ut', 0.0)
+            e_co2_stationary += self.cat1_calc.calculate_total_emissions(
+                fuel_consumption=fuel['fuel_consumption'],
+                emission_factor=ef_co2,
+                oxidation_factor=fuel.get('oxidation_factor', 1.0)
+            )
+
+        # E_факел
+        e_co2_flare = 0
+        for gas in flare_gases:
+            emissions = self.cat2_calc.calculate_emissions_with_default_factors(**gas)
+            e_co2_flare += emissions.get('co2', 0.0)
+            
+        # E_фугитив
+        e_co2_fugitive = 0
+        for gas in fugitive_gases:
+            emissions = self.cat3_calc.calculate_emissions(**gas)
+            e_co2_fugitive += emissions.get('co2', 0.0)
+
+        total_emissions = e_co2_stationary + e_co2_fugitive + e_co2_flare
+        return total_emissions

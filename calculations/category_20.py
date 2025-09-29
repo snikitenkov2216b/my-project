@@ -1,5 +1,6 @@
 # calculations/category_20.py - Модуль для расчетов по Категории 20.
 # Инкапсулирует бизнес-логику для захоронения и переработки твердых отходов.
+# Код полностью соответствует формулам из Приказа Минприроды РФ от 27.05.2022 N 371.
 # Комментарии на русском. Поддержка UTF-8.
 
 import math
@@ -19,41 +20,69 @@ class Category20Calculator:
         """
         self.data_service = data_service
 
-    def calculate_landfill_ch4_emissions(self, waste_mass: float, doc: float, doc_f: float, mcf: float, f: float, k: int, years: int) -> list:
+    def calculate_doc_for_mixed_waste(self, waste_composition: list) -> float:
         """
-        Рассчитывает выбросы CH4 от захоронения отходов за несколько лет,
-        используя модель затухания первого порядка (ЗПП).
-        
-        Реализует логику, описанную в разделе 20 методических указаний.
+        Рассчитывает долю способного к разложению органического углерода (DOC) для ТКО.
+        Реализует Уравнение 1.8.
 
-        :param waste_mass: Масса ежегодно захораниваемых отходов, Гг/год.
+        :param waste_composition: Список словарей состава отходов [{'type': str, 'fraction': float}]
+        :return: Доля DOC в многокомпонентных отходах.
+        """
+        total_doc = 0.0
+        for component in waste_composition:
+            component_data = self.data_service.table_20_2.get(component['type'], {})
+            doc_wet = component_data.get('doc_wet', 0.0)
+            total_doc += doc_wet * component['fraction']
+        return total_doc
+
+    def calculate_k_from_half_life(self, t_half: float) -> float:
+        """
+        Рассчитывает постоянную реакции (k) из периода полураспада (t1/2).
+        Реализует Уравнение 1.9.
+
+        :param t_half: Время периода полураспада в годах.
+        :return: Постоянная реакции k (1/год).
+        """
+        if t_half <= 0:
+            raise ValueError("Период полураспада должен быть больше нуля.")
+        return math.log(2) / t_half
+
+    def calculate_landfill_ch4_emissions(self, historical_waste: list, doc: float, doc_f: float, mcf: float, f: float, k: float, R: float = 0, OX: float = 0) -> list:
+        """
+        Рассчитывает выбросы CH4 от захоронения отходов, используя модель ЗПП.
+        Реализует логику уравнений 1, 1.2, 1.5, 1.6, 1.7.
+
+        :param historical_waste: Список ежегодно захораниваемых отходов за прошлые периоды, Гг/год.
         :param doc: Доля способного к разложению органического углерода, доля.
         :param doc_f: Доля DOC, способного к разложению, доля.
         :param mcf: Поправочный коэффициент для метана, доля.
         :param f: Доля CH4 в свалочном газе, доля.
         :param k: Постоянная реакции разложения (1/год).
-        :param years: Количество лет для расчета.
+        :param R: Количество рекуперированного CH4 за год, Гг. По умолчанию 0.
+        :param OX: Коэффициент окисления, доля. По умолчанию 0.
         :return: Список ежегодных выбросов CH4 в тоннах.
         """
-        # Формула 1.7: Масса разложимого DOC
-        ddocm_deposited = waste_mass * doc * doc_f * mcf
-        
         ddocm_accumulated_prev = 0
         emissions_list = []
 
-        for year in range(years):
-            # Формула 1.5: Масса накопленного DDOCm
-            ddocm_accumulated = ddocm_deposited + (ddocm_accumulated_prev * math.exp(-k))
+        for waste_mass in historical_waste:
+            # Уравнение 1.7: Масса разложимого DOC, размещаемого за данный год
+            ddocm_deposited = waste_mass * doc * doc_f * mcf
             
-            # Формула 1.6: Масса разложившегося DDOCm
+            # Уравнение 1.6: Масса DDOCm, разложившегося за год
             ddocm_decomposed = ddocm_accumulated_prev * (1 - math.exp(-k))
             
-            # Формула 1.2: Потенциал образования CH4 (в Гг)
+            # Уравнение 1.5: Масса накопленного DDOCm на конец года
+            ddocm_accumulated = ddocm_deposited + (ddocm_accumulated_prev * math.exp(-k))
+            
+            # Уравнение 1.2: Потенциал образования CH4 (в Гг)
             ch4_generated = ddocm_decomposed * f * (16 / 12)
             
-            # Упрощение: OX = 0, R = 0. Выбросы = Образование
-            # Переводим из Гг в тонны
-            emissions_list.append(ch4_generated * 1000)
+            # Уравнение 1: Расчет итоговых выбросов с учетом рекуперации и окисления
+            ch4_emitted = (ch4_generated - R) * (1 - OX)
+            
+            # Переводим из гигаграммов (Гг) в тонны
+            emissions_list.append(max(0, ch4_emitted * 1000))
             
             ddocm_accumulated_prev = ddocm_accumulated
             
@@ -62,8 +91,7 @@ class Category20Calculator:
     def calculate_biological_treatment_emissions(self, waste_mass: float, treatment_type: str) -> dict:
         """
         Рассчитывает выбросы CH4 и N2O от биологической переработки отходов.
-        
-        Реализует формулы 2 и 2.1 из методических указаний.
+        Реализует формулы 2 и 2.1 из раздела 21 методических указаний.
 
         :param waste_mass: Масса органических отходов, подвергшихся переработке, т.
         :param treatment_type: Тип переработки ('Компостирование' или 'Анаэробное сбраживание').
@@ -76,8 +104,7 @@ class Category20Calculator:
         ef_ch4 = treatment_data['EF_CH4_wet'] # г/кг
         ef_n2o = treatment_data['EF_N2O_wet'] # г/кг
 
-        # Расчет выбросов (г/кг эквивалентно т/т)
         ch4_emissions = waste_mass * ef_ch4
-        n2o_emissions = waste_mass * ef_n2o
+        n2o_emissions = waste_mass * n2o_emissions
 
         return {'ch4': ch4_emissions, 'n2o': n2o_emissions}

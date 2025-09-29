@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox
 )
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import Qt, QLocale # <--- ДОБАВЛЕН ИМПОРТ QLocale
+from PyQt6.QtCore import Qt, QLocale
 
 from data_models import DataService
 from calculations.category_7 import Category7Calculator
@@ -21,15 +21,13 @@ class Category7Tab(QWidget):
         self.data_service = data_service
         self.calculator = Category7Calculator(self.data_service)
         self.carbonate_rows = []
+        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
-        # Создаем локаль один раз для всего класса
-        self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
-
         method_layout = QFormLayout()
         self.method_combobox = QComboBox()
         self.method_combobox.addItems([
@@ -82,11 +80,9 @@ class Category7Tab(QWidget):
         line_edit = QLineEdit()
         line_edit.setPlaceholderText("Масса, т")
         
-        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
-        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
         
         remove_button = QPushButton("Удалить")
         
@@ -138,7 +134,7 @@ class Category7Tab(QWidget):
         current_method_index = self.method_combobox.currentIndex()
         try:
             co2_emissions = 0.0
-            if current_method_index == 0:
+            if current_method_index == 0: # Расчет по сырью
                 if not self.carbonate_rows:
                     raise ValueError("Добавьте хотя бы один вид карбонатного сырья.")
                 
@@ -150,9 +146,13 @@ class Category7Tab(QWidget):
                         raise ValueError(f"Не заполнено поле массы для '{name}'.")
                     carbonates_data.append({'name': name, 'mass': float(mass_str)})
                 
-                co2_emissions = self.calculator.calculate_based_on_raw_materials(carbonates_data)
+                # Для упрощения UI, передаем пустые данные о пыли
+                co2_emissions = self.calculator.calculate_based_on_raw_materials(
+                    carbonates=carbonates_data,
+                    lime_dust={}
+                )
 
-            elif current_method_index == 1:
+            elif current_method_index == 1: # Расчет по извести
                 lime_prod_str = self.lime_production_input.text().replace(',', '.')
                 cao_frac_str = self.lime_cao_fraction_input.text().replace(',', '.')
                 mgo_frac_str = self.lime_mgo_fraction_input.text().replace(',', '.')
@@ -163,9 +163,17 @@ class Category7Tab(QWidget):
                 lime_production = float(lime_prod_str)
                 cao_fraction = float(cao_frac_str)
                 mgo_fraction = float(mgo_frac_str)
+                
+                lime_composition = [
+                    {'oxide_name': 'CaO', 'fraction': cao_fraction},
+                    {'oxide_name': 'MgO', 'fraction': mgo_fraction}
+                ]
 
+                # Для упрощения UI, передаем пустые данные о пыли
                 co2_emissions = self.calculator.calculate_based_on_lime(
-                    lime_production, cao_fraction, mgo_fraction
+                    lime_production=lime_production,
+                    lime_composition=lime_composition,
+                    lime_dust={}
                 )
 
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")

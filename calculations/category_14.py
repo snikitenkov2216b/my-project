@@ -1,5 +1,6 @@
 # calculations/category_14.py - Модуль для расчетов по Категории 14.
 # Инкапсулирует бизнес-логику для черной металлургии.
+# Код обновлен для полной реализации формул 14.1 и 14.2 из методики.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -27,21 +28,19 @@ class Category14Calculator:
         :return: Содержание углерода в т C / ед. изм.
         :raises ValueError: Если данные для материала не найдены.
         """
-        # Сначала ищем в специализированной таблице 14.1
         data = self.data_service.get_metallurgy_material_data_table_14_1(material_name)
         if data and 'W_C' in data:
             return data['W_C']
         
-        # Если не найдено, ищем в общей топливной таблице 1.1
         data = self.data_service.get_fuel_data_table_1_1(material_name)
         if data and 'W_C_ut' in data:
             return data['W_C_ut']
             
         raise ValueError(f"Данные о содержании углерода для '{material_name}' не найдены в таблицах 14.1 или 1.1.")
 
-    def calculate_emissions(self, raw_materials: list, fuels: list, products: list, by_products: list) -> float:
+    def calculate_emissions_by_process(self, raw_materials: list, fuels: list, products: list, by_products: list) -> float:
         """
-        Рассчитывает выбросы CO2 от металлургического процесса на основе углеродного баланса.
+        Рассчитывает выбросы CO2 для каждого металлургического процесса в отдельности.
         
         Реализует формулу 14.1 из методических указаний.
 
@@ -51,33 +50,40 @@ class Category14Calculator:
         :param by_products: Список словарей сопутствующих продуктов. [{'name': str, 'production': float}]
         :return: Масса выбросов CO2 в тоннах.
         """
-        # --- Расчет входящего углерода (Carbon IN) ---
-        carbon_in = 0.0
-        
-        # Углерод из сырья, материалов и восстановителей
-        for material in raw_materials:
-            w_c = self._get_carbon_content(material['name'])
-            carbon_in += material['consumption'] * w_c
-            
-        # Углерод из топлива
-        for fuel in fuels:
-            w_c = self._get_carbon_content(fuel['name'])
-            carbon_in += fuel['consumption'] * w_c
+        # Входящий углерод
+        carbon_in_raw = sum(m['consumption'] * self._get_carbon_content(m['name']) for m in raw_materials)
+        carbon_in_fuels = sum(f['consumption'] * self._get_carbon_content(f['name']) for f in fuels)
+        carbon_in = carbon_in_raw + carbon_in_fuels
 
-        # --- Расчет выходящего углерода (Carbon OUT) ---
-        carbon_out = 0.0
-        
-        # Углерод в основной продукции
-        for product in products:
-            w_c = self._get_carbon_content(product['name'])
-            carbon_out += product['production'] * w_c
-            
-        # Углерод в сопутствующих продуктах
-        for product in by_products:
-            w_c = self._get_carbon_content(product['name'])
-            carbon_out += product['production'] * w_c
+        # Выходящий углерод
+        carbon_out_products = sum(p['production'] * self._get_carbon_content(p['name']) for p in products)
+        carbon_out_by_products = sum(b['production'] * self._get_carbon_content(b['name']) for b in by_products)
+        carbon_out = carbon_out_products + carbon_out_by_products
 
-        # --- Расчет выбросов CO2 ---
         co2_emissions = (carbon_in - carbon_out) * self.CARBON_TO_CO2_FACTOR
         
         return max(0, co2_emissions)
+
+    def calculate_emissions_by_enterprise_balance(self, inputs: list, outputs: list, stock_changes: list) -> float:
+        """
+        Рассчитывает выбросы CO2 для предприятия в целом на основе сводного углеродного баланса.
+        
+        Реализует формулу 14.2 из методических указаний.
+
+        :param inputs: Список входящих потоков. [{'name': str, 'mass': float}]
+        :param outputs: Список выходящих потоков. [{'name': str, 'mass': float}]
+        :param stock_changes: Список изменений в запасах. [{'name': str, 'mass_change': float}]
+        :return: Масса выбросов CO2 в тоннах.
+        """
+        # Углерод во входящих потоках
+        carbon_in = sum(i['mass'] * self._get_carbon_content(i['name']) for i in inputs)
+        
+        # Углерод в выходящих потоках
+        carbon_out = sum(o['mass'] * self._get_carbon_content(o['name']) for o in outputs)
+        
+        # Углерод в изменении запасов
+        carbon_stock_change = sum(s['mass_change'] * self._get_carbon_content(s['name']) for s in stock_changes)
+        
+        co2_emissions = (carbon_in - carbon_out - carbon_stock_change) * self.CARBON_TO_CO2_FACTOR
+        
+        return co2_emissions

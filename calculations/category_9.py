@@ -1,5 +1,6 @@
 # calculations/category_9.py - Модуль для расчетов по Категории 9.
 # Инкапсулирует бизнес-логику для производства керамических изделий.
+# Код обновлен для полной реализации формулы 9.1 из методики.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -28,7 +29,8 @@ class Category9Calculator:
         с рекомендациями методики при отсутствии фактических данных.
 
         :param raw_materials: Список словарей, где каждый словарь содержит:
-                              {'carbonate_name': str, 'material_mass': float, 'carbonate_fraction': float}
+                              {'carbonate_name': str, 'material_mass': float, 
+                               'carbonate_fraction': float, 'calcination_degree': float}
         :return: Масса выбросов CO2 в тоннах.
         """
         total_co2_emissions = 0.0
@@ -37,7 +39,9 @@ class Category9Calculator:
             carbonate_name = material['carbonate_name']
             material_mass = material['material_mass']
             carbonate_fraction = material['carbonate_fraction']
-            
+            # Степень кальцинирования F_j, по умолчанию 1.0
+            calcination_degree = material.get('calcination_degree', 1.0)
+
             # Коэффициенты выбросов для карбонатов берутся из Таблицы 6.1
             carbonate_data = self.data_service.get_carbonate_data_table_6_1(carbonate_name)
             if not carbonate_data:
@@ -45,8 +49,8 @@ class Category9Calculator:
             
             ef_co2 = carbonate_data.get('EF_CO2', 0.0)
             
-            # Расчет выбросов для данного вида сырья (степень кальцинирования F_j = 1.0)
-            emission = material_mass * carbonate_fraction * ef_co2
+            # Расчет выбросов для данного вида сырья
+            emission = material_mass * carbonate_fraction * ef_co2 * calcination_degree
             total_co2_emissions += emission
             
         return total_co2_emissions

@@ -22,10 +22,7 @@ class Category6Tab(QWidget):
         self.calculator = Category6Calculator(self.data_service)
         self.carbonate_rows = []
         
-        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-        # Создаем локаль один раз для всего класса в конструкторе
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
-        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
         self._init_ui()
 
@@ -86,7 +83,7 @@ class Category6Tab(QWidget):
         line_edit.setPlaceholderText("Масса, т")
         
         validator = QDoubleValidator(0.0, 1e9, 6, self)
-        validator.setLocale(self.c_locale) # Используем атрибут класса
+        validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
         
         remove_button = QPushButton("Удалить")
@@ -115,20 +112,20 @@ class Category6Tab(QWidget):
 
         self.clinker_production_input = QLineEdit()
         clinker_validator = QDoubleValidator(0.0, 1e9, 6, self)
-        clinker_validator.setLocale(self.c_locale) # Используем атрибут класса
+        clinker_validator.setLocale(self.c_locale)
         self.clinker_production_input.setValidator(clinker_validator)
         layout.addRow("Масса произведенного клинкера (т):", self.clinker_production_input)
 
         self.cao_fraction_input = QLineEdit()
         cao_validator = QDoubleValidator(0.0, 1.0, 4, self)
-        cao_validator.setLocale(self.c_locale) # Используем атрибут класса
+        cao_validator.setLocale(self.c_locale)
         self.cao_fraction_input.setValidator(cao_validator)
         self.cao_fraction_input.setPlaceholderText("Например, 0.65")
         layout.addRow("Массовая доля CaO в клинкере (доля):", self.cao_fraction_input)
 
         self.mgo_fraction_input = QLineEdit()
         mgo_validator = QDoubleValidator(0.0, 1.0, 4, self)
-        mgo_validator.setLocale(self.c_locale) # Используем атрибут класса
+        mgo_validator.setLocale(self.c_locale)
         self.mgo_fraction_input.setValidator(mgo_validator)
         self.mgo_fraction_input.setPlaceholderText("Например, 0.02")
         layout.addRow("Массовая доля MgO в клинкере (доля):", self.mgo_fraction_input)
@@ -139,7 +136,7 @@ class Category6Tab(QWidget):
         current_method_index = self.method_combobox.currentIndex()
         try:
             co2_emissions = 0.0
-            if current_method_index == 0:
+            if current_method_index == 0: # Расчет по сырью
                 if not self.carbonate_rows:
                     raise ValueError("Добавьте хотя бы один вид карбонатного сырья.")
                 
@@ -149,11 +146,17 @@ class Category6Tab(QWidget):
                     mass_str = row['input'].text().replace(',', '.')
                     if not mass_str:
                         raise ValueError(f"Не заполнено поле массы для '{name}'.")
+                    # Для упрощения UI не добавляем поля для пыли и некарбонатов,
+                    # передаем пустые значения в функцию расчета.
                     carbonates_data.append({'name': name, 'mass': float(mass_str)})
                 
-                co2_emissions = self.calculator.calculate_based_on_raw_materials(carbonates_data)
+                co2_emissions = self.calculator.calculate_based_on_raw_materials(
+                    carbonates=carbonates_data,
+                    cement_dust={},
+                    non_carbonate_materials=[]
+                )
 
-            elif current_method_index == 1:
+            elif current_method_index == 1: # Расчет по клинкеру
                 clinker_prod_str = self.clinker_production_input.text().replace(',', '.')
                 cao_frac_str = self.cao_fraction_input.text().replace(',', '.')
                 mgo_frac_str = self.mgo_fraction_input.text().replace(',', '.')
@@ -165,8 +168,17 @@ class Category6Tab(QWidget):
                 cao_fraction = float(cao_frac_str)
                 mgo_fraction = float(mgo_frac_str)
 
+                clinker_composition = [
+                    {'oxide_name': 'CaO', 'fraction': cao_fraction},
+                    {'oxide_name': 'MgO', 'fraction': mgo_fraction}
+                ]
+
+                # Для упрощения UI не добавляем поля для пыли и некарбонатов
                 co2_emissions = self.calculator.calculate_based_on_clinker(
-                    clinker_production, cao_fraction, mgo_fraction
+                    clinker_production=clinker_production,
+                    clinker_composition=clinker_composition,
+                    cement_dust={},
+                    non_carbonate_materials=[]
                 )
 
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
