@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
         self.data_service = data_service
         self.calculator_factory = CalculatorFactory(self.data_service)
         
-        self.setWindowTitle("Калькулятор выбросов парниковых газов")
+        self.setWindowTitle("Калькулятор парниковых газов")
         self.setGeometry(100, 100, 900, 700)
 
         self._init_ui()
