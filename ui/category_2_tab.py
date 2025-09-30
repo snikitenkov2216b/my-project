@@ -3,6 +3,7 @@
 # детализированный ввод компонентного состава. Без заглушек.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox
@@ -10,17 +11,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_2 import Category2Calculator
 
 class Category2Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 2 "Сжигание в факелах".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category2Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category2Calculator(self.data_service)
+        self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self.gas_composition_rows = []
         self._init_ui()
@@ -59,7 +58,7 @@ class Category2Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.gas_type_combobox = QComboBox()
-        self.gas_type_combobox.addItems(self.data_service.get_flare_gas_types_table_2_1())
+        self.gas_type_combobox.addItems(self.calculator.data_service.get_flare_gas_types_table_2_1())
         layout.addRow("Вид сжигаемого газа:", self.gas_type_combobox)
 
         self.consumption_input = QLineEdit()
@@ -216,8 +215,10 @@ class Category2Tab(QWidget):
                 self.result_label.setText(f"Результат: {co2_emissions:.4f} т CO2, {ch4_emissions:.4f} т CH4")
 
         except ValueError as e:
+            logging.error(f"Category 2 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 2 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

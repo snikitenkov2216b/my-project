@@ -1,8 +1,8 @@
 # ui/category_7_tab.py - Виджет вкладки для расчетов по Категории 7.
-# Реализует полный динамический интерфейс для производства извести,
-# включая ввод данных по известковой пыли. Без упрощений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox, QScrollArea
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_7 import Category7Calculator
 
 class Category7Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 7 "Производство извести".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category7Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category7Calculator(self.data_service)
+        self.calculator = calculator
         
         self.raw_carbonate_rows = []
         self.raw_dust_carbonate_rows = []
@@ -167,12 +165,12 @@ class Category7Tab(QWidget):
 
     def _add_raw_carbonate_row(self):
         self._create_dynamic_row(self.raw_carbonate_rows, self.raw_carbonates_layout, 
-            self.data_service.get_carbonate_formulas_table_6_1(),
+            self.calculator.data_service.get_carbonate_formulas_table_6_1(),
             [('mass', 'Масса, т', (0.0, 1e9, 6)), ('calc_degree', 'Степень кальц., доля', (0.0, 1.0, 4))])
 
     def _add_raw_dust_carbonate_row(self):
         self._create_dynamic_row(self.raw_dust_carbonate_rows, self.raw_dust_carbonates_layout,
-            self.data_service.get_carbonate_formulas_table_6_1(),
+            self.calculator.data_service.get_carbonate_formulas_table_6_1(),
             [('fraction', 'Доля в пыли', (0.0, 1.0, 4))])
 
     def _add_lime_dust_oxide_row(self):
@@ -216,7 +214,9 @@ class Category7Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 7 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
         except Exception as e:
+            logging.critical(f"Category 7 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

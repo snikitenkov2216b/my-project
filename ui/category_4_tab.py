@@ -1,8 +1,8 @@
 # ui/category_4_tab.py - Виджет вкладки для расчетов по Категории 4.
-# Реализует интерфейс для различных процессов нефтепереработки.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_4 import Category4Calculator
 
 class Category4Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 4 "Нефтепереработка".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category4Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category4Calculator(self.data_service)
+        self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -105,7 +103,7 @@ class Category4Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.feedstock_combobox = QComboBox()
-        self.feedstock_combobox.addItems(self.data_service.get_fuels_table_1_1())
+        self.feedstock_combobox.addItems(self.calculator.data_service.get_fuels_table_1_1())
         self.feedstock_combobox.currentIndexChanged.connect(self._update_hydrogen_units)
         layout.addRow("Вид сырья (топлива):", self.feedstock_combobox)
 
@@ -126,7 +124,7 @@ class Category4Tab(QWidget):
 
     def _update_hydrogen_units(self):
         selected_fuel = self.feedstock_combobox.currentText()
-        fuel_data = self.data_service.get_fuel_data_table_1_1(selected_fuel)
+        fuel_data = self.calculator.data_service.get_fuel_data_table_1_1(selected_fuel)
         unit = fuel_data.get('unit', '') if fuel_data else ''
         self.hydrogen_units_label.setText(f"({unit})")
 
@@ -160,7 +158,10 @@ class Category4Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 4 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 4 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

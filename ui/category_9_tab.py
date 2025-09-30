@@ -1,8 +1,8 @@
 # ui/category_9_tab.py - Виджет вкладки для расчетов по Категории 9.
-# Реализует интерфейс для ввода данных по производству керамических изделий.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QHBoxLayout, QGroupBox, QScrollArea
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_9 import Category9Calculator
 
 class Category9Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 9 "Производство керамических изделий".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category9Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category9Calculator(self.data_service)
+        self.calculator = calculator
         self.raw_material_rows = []
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
@@ -58,7 +56,7 @@ class Category9Tab(QWidget):
         row_layout = QHBoxLayout(row_widget)
         
         carbonate_combo = QComboBox()
-        carbonate_names = self.data_service.get_carbonate_formulas_table_6_1()
+        carbonate_names = self.calculator.data_service.get_carbonate_formulas_table_6_1()
         carbonate_combo.addItems(carbonate_names)
         
         mass_input = QLineEdit()
@@ -142,8 +140,10 @@ class Category9Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 9 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 9 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

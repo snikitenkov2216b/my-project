@@ -1,8 +1,8 @@
 # ui/category_11_tab.py - Виджет вкладки для расчетов по Категории 11.
-# Реализует интерфейс для различных химических производств и методов расчета.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget
@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_11 import Category11Calculator
 
 class Category11Tab(QWidget):
@@ -18,10 +17,9 @@ class Category11Tab(QWidget):
     Класс виджета-вкладки для Категории 11 "Производство азотной кислоты,
     капролактама, глиоксаля и глиоксиловой кислоты".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category11Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category11Calculator(self.data_service)
+        self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -71,7 +69,7 @@ class Category11Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.process_combobox = QComboBox()
-        process_names = self.data_service.get_chemical_processes_table_11_1()
+        process_names = self.calculator.data_service.get_chemical_processes_table_11_1()
         self.process_combobox.addItems(process_names)
         layout.addRow("Производственный процесс:", self.process_combobox)
         
@@ -146,8 +144,10 @@ class Category11Tab(QWidget):
                 self.result_label.setText(f"Результат: Коэффициент выбросов (EF) = {emission_factor:.4f} кг N2O/т")
 
         except ValueError as e:
+            logging.error(f"Category 11 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 11 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

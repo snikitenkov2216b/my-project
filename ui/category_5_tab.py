@@ -1,8 +1,8 @@
 # ui/category_5_tab.py - Виджет вкладки для расчетов по Категории 5.
-# Реализует динамический интерфейс для метода углеродного баланса.
-# Код написан полностью, без сокращений и упрощений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QGroupBox, QHBoxLayout, QScrollArea
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_5 import Category5Calculator
 
 class Category5Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 5 "Производство кокса".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category5Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category5Calculator(self.data_service)
+        self.calculator = calculator
         
         self.raw_material_rows = []
         self.fuel_rows = []
@@ -123,15 +121,15 @@ class Category5Tab(QWidget):
         storage_list.remove(row_data)
 
     def _add_raw_material_row(self):
-        items = [f for f in self.data_service.get_fuels_table_1_1() if "уголь" in f.lower()]
+        items = [f for f in self.calculator.data_service.get_fuels_table_1_1() if "уголь" in f.lower()]
         self._create_dynamic_row("Расход сырья, т", self.raw_materials_layout, self.raw_material_rows, items)
 
     def _add_fuel_row(self):
-        items = self.data_service.get_fuels_table_1_1()
+        items = self.calculator.data_service.get_fuels_table_1_1()
         self._create_dynamic_row("Расход топлива", self.fuels_layout, self.fuel_rows, items)
 
     def _add_by_product_row(self):
-        items = self.data_service.get_fuels_table_1_1()
+        items = self.calculator.data_service.get_fuels_table_1_1()
         self._create_dynamic_row("Выход продукта", self.by_products_layout, self.by_product_rows, items)
 
     def _get_float(self, line_edit, field_name):
@@ -170,8 +168,9 @@ class Category5Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 5 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
-            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 5 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

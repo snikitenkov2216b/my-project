@@ -1,7 +1,8 @@
 # ui/category_3_tab.py - Виджет вкладки для расчетов по Категории 3.
-# Код полностью реализует интерфейс для расчета фугитивных выбросов.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox,
     QLineEdit, QPushButton, QLabel, QMessageBox, QHBoxLayout
@@ -9,23 +10,21 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_3 import Category3Calculator
 
 class Category3Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 3 "Фугитивные выбросы".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category3Calculator, parent=None):
         """
         Конструктор вкладки.
         
-        :param data_service: Экземпляр сервиса для доступа к данным.
+        :param calculator: Экземпляр калькулятора для Категории 3.
         :param parent: Родительский виджет.
         """
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category3Calculator(self.data_service)
+        self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -42,7 +41,7 @@ class Category3Tab(QWidget):
         
         # 1. Выпадающий список для выбора вида углеводородной смеси
         self.gas_type_combobox = QComboBox()
-        gas_types = self.data_service.get_fugitive_gas_types_table_3_1()
+        gas_types = self.calculator.data_service.get_fugitive_gas_types_table_3_1()
         self.gas_type_combobox.addItems(gas_types)
         form_layout.addRow("Вид углеводородной смеси:", self.gas_type_combobox)
 
@@ -97,8 +96,10 @@ class Category3Tab(QWidget):
             self.result_label.setText(f"Результат: {co2:.4f} тонн CO2, {ch4:.4f} тонн CH4")
 
         except ValueError as e:
+            logging.error(f"Category 3 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 3 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

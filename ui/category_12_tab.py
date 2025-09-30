@@ -1,8 +1,8 @@
 # ui/category_12_tab.py - Виджет вкладки для расчетов по Категории 12.
-# Реализует интерфейс для двух методов расчета в нефтехимическом производстве.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox, QScrollArea
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_12 import Category12Calculator
 
 class Category12Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 12 "Нефтехимическое производство".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category12Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category12Calculator(self.data_service)
+        self.calculator = calculator
         
         self.balance_raw_materials = []
         self.balance_primary_products = []
@@ -124,15 +122,15 @@ class Category12Tab(QWidget):
 
         return scroll_area
 
-    def _add_balance_raw_row(self): self._create_dynamic_row(self.balance_raw_materials, self.balance_raw_layout, self.data_service.get_petrochemical_substance_names_12_1(), [('consumption', 'Расход, т', (0.0, 1e9, 6))])
-    def _add_balance_primary_row(self): self._create_dynamic_row(self.balance_primary_products, self.balance_primary_layout, self.data_service.get_petrochemical_substance_names_12_1(), [('production', 'Производство, т', (0.0, 1e9, 6))])
-    def _add_balance_by_prod_row(self): self._create_dynamic_row(self.balance_by_products, self.balance_by_prod_layout, self.data_service.get_petrochemical_substance_names_12_1(), [('production', 'Производство, т', (0.0, 1e9, 6))])
+    def _add_balance_raw_row(self): self._create_dynamic_row(self.balance_raw_materials, self.balance_raw_layout, self.calculator.data_service.get_petrochemical_substance_names_12_1(), [('consumption', 'Расход, т', (0.0, 1e9, 6))])
+    def _add_balance_primary_row(self): self._create_dynamic_row(self.balance_primary_products, self.balance_primary_layout, self.calculator.data_service.get_petrochemical_substance_names_12_1(), [('production', 'Производство, т', (0.0, 1e9, 6))])
+    def _add_balance_by_prod_row(self): self._create_dynamic_row(self.balance_by_products, self.balance_by_prod_layout, self.calculator.data_service.get_petrochemical_substance_names_12_1(), [('production', 'Производство, т', (0.0, 1e9, 6))])
     
     def _add_source_cat1_row(self):
         row_widget = QWidget()
         layout = QHBoxLayout(row_widget)
         combo = QComboBox()
-        combo.addItems(self.data_service.get_fuels_table_1_1())
+        combo.addItems(self.calculator.data_service.get_fuels_table_1_1())
         consumption = QLineEdit(placeholderText="Расход")
         oxidation = QLineEdit(placeholderText="Коэф. окисления (0-1)", text="1.0")
         oxidation.setToolTip("Коэффициент полноты сгорания топлива (доля от 0 до 1).")
@@ -147,7 +145,7 @@ class Category12Tab(QWidget):
         row_widget = QWidget()
         layout = QHBoxLayout(row_widget)
         combo = QComboBox()
-        combo.addItems(self.data_service.get_flare_gas_types_table_2_1())
+        combo.addItems(self.calculator.data_service.get_flare_gas_types_table_2_1())
         consumption = QLineEdit(placeholderText="Расход")
         unit_combo = QComboBox(); unit_combo.addItems(["тонна", "тыс. м3"])
         remove_button = QPushButton("Удалить")
@@ -158,7 +156,7 @@ class Category12Tab(QWidget):
         remove_button.clicked.connect(lambda: self._remove_row(row_data, self.source_cat2_layout, self.source_flare_gases))
 
     def _add_source_cat3_row(self):
-        self._create_dynamic_row(self.source_fugitive_gases, self.source_cat3_layout, self.data_service.get_fugitive_gas_types_table_3_1(), [('volume', 'Объем, тыс. м3', (0.0, 1e9, 6))])
+        self._create_dynamic_row(self.source_fugitive_gases, self.source_cat3_layout, self.calculator.data_service.get_fugitive_gas_types_table_3_1(), [('volume', 'Объем, тыс. м3', (0.0, 1e9, 6))])
 
     def _create_dynamic_row(self, storage, layout, items, fields):
         row_widget = QWidget()
@@ -193,6 +191,14 @@ class Category12Tab(QWidget):
             method_index = self.method_combobox.currentIndex()
             co2_emissions = 0.0
 
+            def collect_data(storage_list, key_name, list_name):
+                items = []
+                for i, row in enumerate(storage_list):
+                    name = row['combo'].currentText()
+                    value = self._get_float(row[key_name], f"{list_name} для '{name}' (строка {i+1})")
+                    items.append({'name': name, key_name: value})
+                return items
+
             if method_index == 0: # Метод баланса
                 raw_materials = [{'name': r['combo'].currentText(), 'consumption': self._get_float(r['consumption'], 'Расход сырья')} for r in self.balance_raw_materials]
                 primary_products = [{'name': r['combo'].currentText(), 'production': self._get_float(r['production'], 'Производство осн. продукции')} for r in self.balance_primary_products]
@@ -209,7 +215,9 @@ class Category12Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 12 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
         except Exception as e:
+            logging.critical(f"Category 12 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

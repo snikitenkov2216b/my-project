@@ -1,8 +1,8 @@
 # ui/category_10_tab.py - Виджет вкладки для расчетов по Категории 10.
-# Реализует интерфейс для ввода данных по производству аммиака.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QHBoxLayout
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_10 import Category10Calculator
 
 class Category10Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 10 "Производство аммиака".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category10Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category10Calculator(self.data_service)
+        self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -32,7 +30,7 @@ class Category10Tab(QWidget):
         form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
 
         self.feedstock_combobox = QComboBox()
-        feedstock_list = self.data_service.get_fuels_table_1_1()
+        feedstock_list = self.calculator.data_service.get_fuels_table_1_1()
         self.feedstock_combobox.addItems(feedstock_list)
         self.feedstock_combobox.currentIndexChanged.connect(self._update_units)
         form_layout.addRow("Вид углеродсодержащего сырья:", self.feedstock_combobox)
@@ -71,7 +69,7 @@ class Category10Tab(QWidget):
     def _update_units(self):
         """Обновляет текст с единицами измерения в зависимости от выбранного сырья."""
         selected_feedstock = self.feedstock_combobox.currentText()
-        feedstock_data = self.data_service.get_fuel_data_table_1_1(selected_feedstock)
+        feedstock_data = self.calculator.data_service.get_fuel_data_table_1_1(selected_feedstock)
         unit_text = f"({feedstock_data.get('unit', '')})" if feedstock_data else ""
         self.units_label.setText(unit_text)
 
@@ -98,8 +96,10 @@ class Category10Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 10 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 10 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

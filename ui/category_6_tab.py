@@ -1,8 +1,8 @@
 # ui/category_6_tab.py - Виджет вкладки для расчетов по Категории 6.
-# Реализует полный динамический интерфейс для всех методов расчета,
-# включая ввод данных по цементной пыли и некарбонатному сырью. Без упрощений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox, QScrollArea
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_6 import Category6Calculator
 
 class Category6Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 6 "Производство цемента".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category6Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category6Calculator(self.data_service)
+        self.calculator = calculator
         
         self.raw_carbonate_rows = []
         self.raw_dust_carbonate_rows = []
@@ -182,17 +180,17 @@ class Category6Tab(QWidget):
 
     def _add_raw_carbonate_row(self):
         self._create_dynamic_row(self.raw_carbonate_rows, self.raw_carbonates_layout, 
-            self.data_service.get_carbonate_formulas_table_6_1(),
+            self.calculator.data_service.get_carbonate_formulas_table_6_1(),
             [('mass', 'Масса, т', (0.0, 1e9, 6)), ('calc_degree', 'Степень кальц., доля', (0.0, 1.0, 4))])
 
     def _add_raw_dust_carbonate_row(self):
         self._create_dynamic_row(self.raw_dust_carbonate_rows, self.raw_dust_carbonates_layout,
-            self.data_service.get_carbonate_formulas_table_6_1(),
+            self.calculator.data_service.get_carbonate_formulas_table_6_1(),
             [('fraction', 'Доля в пыли', (0.0, 1.0, 4))])
 
     def _add_raw_non_carbonate_row(self):
         self._create_dynamic_row(self.raw_non_carbonate_rows, self.raw_non_carbonates_layout,
-            self.data_service.get_fuels_table_1_1(),
+            self.calculator.data_service.get_fuels_table_1_1(),
             [('consumption', 'Расход, т', (0.0, 1e9, 6))])
 
     def _add_clinker_dust_oxide_row(self):
@@ -202,7 +200,7 @@ class Category6Tab(QWidget):
 
     def _add_clinker_non_carbonate_row(self):
         self._create_dynamic_row(self.clinker_non_carbonate_rows, self.clinker_non_carbonates_layout,
-            self.data_service.get_fuels_table_1_1(),
+            self.calculator.data_service.get_fuels_table_1_1(),
             [('consumption', 'Расход, т', (0.0, 1e9, 6))])
 
     def _get_float(self, line_edit, field_name):
@@ -245,7 +243,9 @@ class Category6Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 6 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
         except Exception as e:
+            logging.critical(f"Category 6 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

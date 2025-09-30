@@ -1,8 +1,8 @@
 # ui/category_8_tab.py - Виджет вкладки для расчетов по Категории 8.
-# Реализует динамический интерфейс для ввода данных по производству стекла.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QHBoxLayout, QGroupBox, QScrollArea
@@ -10,17 +10,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_8 import Category8Calculator
 
 class Category8Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 8 "Производство стекла".
     """
-    def __init__(self, data_service: DataService, parent=None):
+    def __init__(self, calculator: Category8Calculator, parent=None):
         super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category8Calculator(self.data_service)
+        self.calculator = calculator
         self.carbonate_rows = []
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
@@ -36,11 +34,11 @@ class Category8Tab(QWidget):
         main_layout.addWidget(scroll_area)
 
         group_box = QGroupBox("Карбонатное сырье, используемое в шихте")
-        self.carbonates_layout = QVBoxLayout(group_box)
+        self.materials_layout = QVBoxLayout(group_box)
         
         add_button = QPushButton("Добавить карбонат")
         add_button.clicked.connect(self._add_carbonate_row)
-        self.carbonates_layout.addWidget(add_button)
+        self.materials_layout.addWidget(add_button)
 
         form_container_layout.addWidget(group_box)
 
@@ -58,8 +56,8 @@ class Category8Tab(QWidget):
         row_layout = QHBoxLayout(row_widget)
         
         combo = QComboBox()
-        carbonates_6_1 = self.data_service.get_carbonate_formulas_table_6_1()
-        carbonates_8_1 = self.data_service.get_glass_carbonate_formulas_table_8_1()
+        carbonates_6_1 = self.calculator.data_service.get_carbonate_formulas_table_6_1()
+        carbonates_8_1 = self.calculator.data_service.get_glass_carbonate_formulas_table_8_1()
         all_carbonates = sorted(list(set(carbonates_6_1 + carbonates_8_1)))
         combo.addItems(all_carbonates)
         
@@ -99,7 +97,7 @@ class Category8Tab(QWidget):
     def _remove_row(self, row_data):
         """Удаляет строку из интерфейса и из списка хранения."""
         row_widget = row_data['widget']
-        self.carbonates_layout.removeWidget(row_widget)
+        self.materials_layout.removeWidget(row_widget)
         row_widget.deleteLater()
         self.carbonate_rows.remove(row_data)
 
@@ -133,8 +131,10 @@ class Category8Tab(QWidget):
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
         except ValueError as e:
+            logging.error(f"Category 8 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
+            logging.critical(f"Category 8 Calculation - Unexpected error: {e}", exc_info=True)
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

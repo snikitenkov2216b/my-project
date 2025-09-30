@@ -1,5 +1,5 @@
 # ui/category_0_tab.py - Виджет вкладки для Категории 0.
-# Реализует интерфейс для расчета расхода по балансовому методу.
+# Код обновлен для приема калькулятора из фабрики.
 # Комментарии на русском. Поддержка UTF-8.
 
 from PyQt6.QtWidgets import (
@@ -15,9 +15,9 @@ class Category0Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 0 "Расчет расхода по балансу".
     """
-    def __init__(self, parent=None):
+    def __init__(self, calculator: Category0Calculator, parent=None):
         super().__init__(parent)
-        self.calculator = Category0Calculator()
+        self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
