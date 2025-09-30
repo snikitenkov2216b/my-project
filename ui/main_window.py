@@ -34,6 +34,7 @@ from ui.category_21_tab import Category21Tab
 from ui.category_22_tab import Category22Tab
 from ui.category_23_tab import Category23Tab
 from ui.category_24_tab import Category24Tab
+from ui.custom_formula_tab import CustomFormulaTab # <-- ИМПОРТ НОВОЙ ВКЛАДКИ
 
 class MainWindow(QMainWindow):
     """
@@ -44,7 +45,7 @@ class MainWindow(QMainWindow):
         self.data_service = data_service
         self.calculator_factory = CalculatorFactory(self.data_service)
         
-        self.setWindowTitle("Калькулятор парниковых газов")
+        self.setWindowTitle("Калькулятор выбросов парниковых газов")
         self.setGeometry(100, 100, 900, 700)
 
         self._init_ui()
@@ -58,7 +59,7 @@ class MainWindow(QMainWindow):
 
         # Добавляем дашборд и вкладку с категориями в главное окно
         self.tabs.addTab(DashboardTab(self.categories_tabs), "Главная панель")
-        self.tabs.addTab(self.categories_tabs, "Выбросы ПГ")
+        self.tabs.addTab(self.categories_tabs, "Категории")
 
         # Добавляем все вкладки для категорий в контейнер "Категории"
         self.categories_tabs.addTab(Category0Tab(self.calculator_factory.get_calculator("Category0")), "Кат. 0: Расход ресурсов")
@@ -87,6 +88,6 @@ class MainWindow(QMainWindow):
         self.categories_tabs.addTab(Category23Tab(self.calculator_factory.get_calculator("Category23")), "Кат. 23: Сточные воды (CH4)")
         self.categories_tabs.addTab(Category24Tab(self.calculator_factory.get_calculator("Category24")), "Кат. 24: Сточные воды (N2O)")
         
-        # Добавляем новые вкладки-заглушки в главное окно
+        # Добавляем новые вкладки в главное окно
         self.tabs.addTab(QWidget(), "Поглощение ПГ")
-        self.tabs.addTab(QWidget(), "Своя формула")
+        self.tabs.addTab(CustomFormulaTab(), "Своя формула")

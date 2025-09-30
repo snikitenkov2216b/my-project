@@ -58,3 +58,136 @@
 2025-10-01 00:48:08 - root - INFO - DataService инициализирован.
 2025-10-01 00:48:08 - root - INFO - MainWindow создан.
 2025-10-01 00:48:08 - root - INFO - Главное окно отображено.
+2025-10-01 00:54:28 - root - INFO - Система логирования инициализирована.
+2025-10-01 00:54:28 - root - INFO - Запуск приложения...
+2025-10-01 00:54:28 - root - INFO - QApplication создан.
+2025-10-01 00:54:28 - root - INFO - DataService инициализирован.
+2025-10-01 00:54:28 - root - INFO - MainWindow создан.
+2025-10-01 00:54:28 - root - INFO - Главное окно отображено.
+2025-10-01 00:55:41 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{
+       ^
+ParseSyntaxException: Expected end_group, found end of text  (at char 7), (line:1, col:8)
+2025-10-01 00:55:50 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{
+       ^
+ParseSyntaxException: Expected end_group, found end of text  (at char 7), (line:1, col:8)
+2025-10-01 00:55:52 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{_
+        ^
+ParseSyntaxException: Expected {accent | symbol | function | operatorname | group | frac | dfrac | binom | genfrac | overset | underset | sqrt | overline | text | boldsymbol | substack}, found end of text  (at char 8), (line:1, col:9)
+2025-10-01 00:55:55 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{2
+        ^
+ParseSyntaxException: Expected end_group, found end of text  (at char 8), (line:1, col:9)
+2025-10-01 00:56:02 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{2} + \frac
+                 ^
+ParseSyntaxException: Expected \frac{num}{den}, found end of text  (at char 17), (line:1, col:18)
+2025-10-01 00:56:04 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{2} + \frac{}
+                 ^
+ParseSyntaxException: Expected \frac{num}{den}, found '{'  (at char 17), (line:1, col:18)
+2025-10-01 00:56:07 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{2} + \frac{}
+                 ^
+ParseSyntaxException: Expected \frac{num}{den}, found '{'  (at char 17), (line:1, col:18)
+2025-10-01 00:56:09 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{2} + \frac{}{}
+                 ^
+ParseSyntaxException: Expected \frac{num}{den}, found '{'  (at char 17), (line:1, col:18)
+2025-10-01 00:56:11 - root - WARNING - Ошибка рендеринга LaTeX: 
+С = C_{2} + \frac{10}{}
+                 ^
+ParseSyntaxException: Expected \frac{num}{den}, found '{'  (at char 17), (line:1, col:18)
+2025-10-01 00:57:06 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 00:57:54 - root - ERROR - Ошибка вычисления LaTeX-формулы: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 00:57:54 - root - ERROR - Custom Formula Calculation - Error: Ошибка при вычислении формулы: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 00:58:48 - root - INFO - Система логирования инициализирована.
+2025-10-01 00:58:48 - root - INFO - Запуск приложения...
+2025-10-01 00:58:48 - root - INFO - QApplication создан.
+2025-10-01 00:58:48 - root - INFO - DataService инициализирован.
+2025-10-01 00:58:48 - root - INFO - MainWindow создан.
+2025-10-01 00:58:48 - root - INFO - Главное окно отображено.
+2025-10-01 00:59:01 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{
+       ^
+ParseSyntaxException: Expected end_group, found end of text  (at char 7), (line:1, col:8)
+2025-10-01 00:59:16 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:17 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC{}
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:19 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC{2}
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:20 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC{20}
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:22 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC{20}{}
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:23 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC{20}{1}
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:24 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2} + \FRAC{20}{10}
+            ^
+ParseFatalException: Unknown symbol: \FRAC, found '\'  (at char 12), (line:1, col:13)
+2025-10-01 00:59:27 - root - WARNING - Ошибка рендеринга LaTeX: 
+$A = C_{2} + \{20}{10}$
+^
+ParseException: Expected end of text, found '$'  (at char 0), (line:1, col:1)
+2025-10-01 00:59:38 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 01:00:22 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 01:01:30 - root - INFO - Система логирования инициализирована.
+2025-10-01 01:01:30 - root - INFO - Запуск приложения...
+2025-10-01 01:01:30 - root - INFO - QApplication создан.
+2025-10-01 01:01:30 - root - INFO - DataService инициализирован.
+2025-10-01 01:01:30 - root - INFO - MainWindow создан.
+2025-10-01 01:01:31 - root - INFO - Главное окно отображено.
+2025-10-01 01:01:40 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = c_
+      ^
+ParseSyntaxException: Expected {accent | symbol | function | operatorname | group | frac | dfrac | binom | genfrac | overset | underset | sqrt | overline | text | boldsymbol | substack}, found end of text  (at char 6), (line:1, col:7)
+2025-10-01 01:01:44 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{
+       ^
+ParseSyntaxException: Expected end_group, found end of text  (at char 7), (line:1, col:8)
+2025-10-01 01:02:01 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2 } + \frac{}{}
+                  ^
+ParseSyntaxException: Expected \frac{num}{den}, found '{'  (at char 18), (line:1, col:19)
+2025-10-01 01:02:02 - root - WARNING - Ошибка рендеринга LaTeX: 
+A = C_{2 } + \frac{20}{}
+                  ^
+ParseSyntaxException: Expected \frac{num}{den}, found '{'  (at char 18), (line:1, col:19)
+2025-10-01 01:02:11 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 01:02:18 - root - INFO - Система логирования инициализирована.
+2025-10-01 01:02:18 - root - INFO - Запуск приложения...
+2025-10-01 01:02:18 - root - INFO - QApplication создан.
+2025-10-01 01:02:18 - root - INFO - DataService инициализирован.
+2025-10-01 01:02:18 - root - INFO - MainWindow создан.
+2025-10-01 01:02:19 - root - INFO - Главное окно отображено.
+2025-10-01 01:02:29 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 01:03:08 - root - INFO - Система логирования инициализирована.
+2025-10-01 01:03:08 - root - INFO - Запуск приложения...
+2025-10-01 01:03:08 - root - INFO - QApplication создан.
+2025-10-01 01:03:08 - root - INFO - DataService инициализирован.
+2025-10-01 01:03:08 - root - INFO - MainWindow создан.
+2025-10-01 01:03:08 - root - INFO - Главное окно отображено.
+2025-10-01 01:03:19 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
+2025-10-01 01:04:24 - root - INFO - Система логирования инициализирована.
+2025-10-01 01:04:24 - root - INFO - Запуск приложения...
+2025-10-01 01:04:24 - root - INFO - QApplication создан.
+2025-10-01 01:04:24 - root - INFO - DataService инициализирован.
+2025-10-01 01:04:24 - root - INFO - MainWindow создан.
+2025-10-01 01:04:24 - root - INFO - Главное окно отображено.
+2025-10-01 01:04:35 - root - ERROR - Ошибка парсинга LaTeX для поиска переменных: LaTeX parsing requires the antlr4 Python package, provided by pip (antlr4-python3-runtime) or conda (antlr-python-runtime), version 4.11
