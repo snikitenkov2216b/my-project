@@ -34,10 +34,10 @@ class Category21Calculator:
         if not treatment_data:
             raise ValueError(f"Данные для типа переработки '{treatment_type}' не найдены.")
 
-        ef_ch4 = treatment_data.get('EF_CH4_wet', 0.0) # EF в г/кг, что численно равно т/т
+        ef_ch4 = treatment_data.get('EF_CH4_wet', 0.0) # EF в г/кг
 
-        # Выбросы (т) = Масса (т) * EF (т/т) - Рекуперация (т)
-        ch4_emissions = (waste_mass * ef_ch4) - recovered_ch4
+        # Выбросы (т) = Масса (т) * EF (г/кг) / 1000 (г/кг в т/т) - Рекуперация (т)
+        ch4_emissions = (waste_mass * ef_ch4 / 1000) - recovered_ch4
         
         return max(0, ch4_emissions)
 
@@ -56,9 +56,9 @@ class Category21Calculator:
         if not treatment_data:
             raise ValueError(f"Данные для типа переработки '{treatment_type}' не найдены.")
 
-        ef_n2o = treatment_data.get('EF_N2O_wet', 0.0) # EF в г/кг, что численно равно т/т
+        ef_n2o = treatment_data.get('EF_N2O_wet', 0.0) # EF в г/кг
         
-        # Выбросы (т) = Масса (т) * EF (т/т)
-        n2o_emissions = waste_mass * ef_n2o
+        # Выбросы (т) = Масса (т) * EF (г/кг) / 1000 (г/кг в т/т)
+        n2o_emissions = waste_mass * ef_n2o / 1000
         
         return n2o_emissions
