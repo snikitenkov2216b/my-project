@@ -1,6 +1,5 @@
 # calculations/category_2.py - Модуль для расчетов по Категории 2.
-# Инкапсулирует всю бизнес-логику, связанную со сжиганием в факелах.
-# Код исправлен и дополнен для поддержки всех формул (2.1 - 2.5) из методики.
+# Код обновлен с добавлением валидации входных данных.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -46,6 +45,8 @@ class Category2Calculator:
             ef_co2 = (w_co2 + sum_term * (1 - combustion_inefficiency_factor)) * rho_co2_standard * 10**-2
         else:
             # Формула 2.3 (по массе)
+            if gas_density <= 0:
+                raise ValueError("Плотность газа для расчета по массе должна быть больше нуля.")
             w_co2 = next((comp.get('mass_fraction', 0.0) for comp in gas_composition if comp['name'] == 'CO2'), 0.0)
             sum_term = sum(
                 ((comp.get('mass_fraction', 0.0) * comp.get('carbon_atoms', 0) * molar_mass_co2) / comp.get('molar_mass', 1))
@@ -88,6 +89,9 @@ class Category2Calculator:
         :param unit: Единица измерения расхода ('тонна' или 'тыс. м3').
         :return: Словарь с массами выбросов CO2 и CH4 в тоннах.
         """
+        if consumption < 0:
+            raise ValueError("Расход газа не может быть отрицательным.")
+
         gas_data = self.data_service.get_flare_gas_data_table_2_1(gas_type)
         if not gas_data:
             raise ValueError(f"Данные для газа '{gas_type}' не найдены в таблице 2.1.")

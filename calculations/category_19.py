@@ -1,5 +1,5 @@
 # calculations/category_19.py - Модуль для расчетов по Категории 19.
-# Инкапсулирует бизнес-логику для дорожного хозяйства.
+# Код обновлен с добавлением валидации входных данных.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -29,8 +29,11 @@ class Category19Calculator:
         total_co2_emissions = 0.0
         for fuel in fuel_consumptions:
             fuel_name = fuel['name']
-            consumption = fuel['consumption'] # предполагается в тоннах
+            consumption = fuel['consumption']
             
+            if consumption < 0:
+                raise ValueError(f"Расход для '{fuel_name}' не может быть отрицательным.")
+
             # Используем данные из общей таблицы 18.1 для транспортных топлив
             fuel_data = self.data_service.get_transport_fuel_data_table_18_1(fuel_name)
             if not fuel_data or 'EF_CO2_t' not in fuel_data or fuel_data['EF_CO2_t'] is None:
@@ -63,6 +66,9 @@ class Category19Calculator:
             length = work['length']
             years = work['years']
 
+            if length < 0 or years <= 0:
+                raise ValueError("Протяженность дороги должна быть неотрицательной, а срок работ - больше нуля.")
+
             ef_data = self.data_service.get_road_work_data_table_19_1(road_type, stage, road_category)
             if not ef_data:
                 raise ValueError(f"Коэффициент для '{road_type}', '{stage}', категория '{road_category}' не найден.")
@@ -73,10 +79,7 @@ class Category19Calculator:
             total_emissions_for_project = length * ef
             
             # Формула 19.3: E_1год = E / Y (распределяем на количество лет)
-            if years > 0:
-                emissions_per_year = total_emissions_for_project / years
-            else:
-                emissions_per_year = total_emissions_for_project # Если работа длится < 1 года
+            emissions_per_year = total_emissions_for_project / years
                 
             total_co2_emissions_per_year += emissions_per_year
             

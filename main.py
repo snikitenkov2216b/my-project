@@ -1,34 +1,50 @@
 # main.py - Главный исполняемый файл приложения.
-# Отвечает за запуск и инициализацию основных компонентов.
 # Комментарии на русском. Поддержка UTF-8.
 
 import sys
+import logging
 from PyQt6.QtWidgets import QApplication
 
-# Импортируем сервис данных и главное окно
 from data_models import DataService
 from ui.main_window import MainWindow
+from logger_config import setup_logging
+
 
 def main():
     """
     Основная функция для запуска приложения.
     """
-    # Создаем экземпляр приложения
-    app = QApplication(sys.argv)
+    # 1. Настраиваем систему логирования
+    setup_logging()
 
-    # 1. Инициализируем сервис данных.
-    # Он будет создан один раз и передан во все части приложения,
-    # которые нуждаются в доступе к таблицам с коэффициентами.
-    data_service = DataService()
+    try:
+        logging.info("Запуск приложения...")
 
-    # 2. Создаем главное окно, передавая ему сервис данных.
-    main_window = MainWindow(data_service)
+        # 2. Создаем экземпляр приложения Qt
+        app = QApplication(sys.argv)
+        logging.info("QApplication создан.")
 
-    # 3. Показываем главное окно.
-    main_window.show()
+        # 3. Инициализируем сервис данных
+        data_service = DataService()
+        logging.info("DataService инициализирован.")
 
-    # 4. Запускаем главный цикл обработки событий.
-    sys.exit(app.exec())
+        # 4. Создаем главное окно
+        main_window = MainWindow(data_service)
+        logging.info("MainWindow создан.")
 
-if __name__ == '__main__':
+        # 5. Показываем главное окно
+        main_window.show()
+        logging.info("Главное окно отображено.")
+
+        # 6. Запускаем главный цикл обработки событий
+        sys.exit(app.exec())
+
+    except Exception as e:
+        logging.critical(
+            f"Критическая ошибка при запуске приложения: {e}", exc_info=True
+        )
+        sys.exit(1)
+
+
+if __name__ == "__main__":
     main()

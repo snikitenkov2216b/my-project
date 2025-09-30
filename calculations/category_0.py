@@ -9,7 +9,7 @@ class Category0Calculator:
 
     @staticmethod
     def calculate_consumption(
-         поступление: float, 
+        поступление: float, 
         отгрузка: float, 
         запас_начало: float, 
         запас_конец: float

@@ -584,7 +584,6 @@ class DataService:
                 return item
         return None
 
-    # ИСПРАВЛЕНО: Добавлена новая функция
     def get_transport_fuel_names_18_1(self):
         return [item['fuel'] for item in self.table_18_1]
 

@@ -1,5 +1,5 @@
 # calculations/category_5.py - Модуль для расчетов по Категории 5.
-# Инкапсулирует бизнес-логику для производства кокса на основе углеродного баланса.
+# Код обновлен для использования централизованных констант и валидации данных.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -17,8 +17,7 @@ class Category5Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR # ИСПОЛЬЗОВАНИЕ
-# ... остальной код файла без изменений ...
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR
 
     def _get_carbon_content(self, material_name: str) -> float:
         """
@@ -30,9 +29,6 @@ class Category5Calculator:
         """
         data = self.data_service.get_fuel_data_table_1_1(material_name)
         
-        # Примечание: Для коксующихся углей методика предлагает специальную формулу 1.10.
-        # В данной реализации, для унификации и простоты, используется табличное значение,
-        # как и для всех остальных материалов. При необходимости, логику можно расширить.
         if not data or 'W_C_ut' not in data:
             raise ValueError(f"Данные о содержании углерода для '{material_name}' не найдены в таблице 1.1.")
         return data['W_C_ut']
@@ -54,11 +50,15 @@ class Category5Calculator:
         
         # Углерод из сырья (коксующиеся угли и т.д.)
         for material in raw_materials:
+            if material.get('consumption', 0) < 0:
+                raise ValueError("Расход сырья не может быть отрицательным.")
             w_c = self._get_carbon_content(material['name'])
             carbon_in += material['consumption'] * w_c
             
         # Углерод из топлива
         for fuel in fuels:
+            if fuel.get('consumption', 0) < 0:
+                raise ValueError("Расход топлива не может быть отрицательным.")
             w_c = self._get_carbon_content(fuel['name'])
             carbon_in += fuel['consumption'] * w_c
 
@@ -67,17 +67,19 @@ class Category5Calculator:
         
         # Углерод в основном продукте (коксе)
         if main_product and main_product.get('production', 0) > 0:
+            if main_product['production'] < 0:
+                raise ValueError("Производство основного продукта не может быть отрицательным.")
             w_c_main = self._get_carbon_content(main_product['name'])
             carbon_out += main_product['production'] * w_c_main
             
         # Углерод в сопутствующих продуктах (коксовый газ, смола и т.д.)
         for product in by_products:
+            if product.get('production', 0) < 0:
+                raise ValueError("Выход сопутствующего продукта не может быть отрицательным.")
             w_c_by = self._get_carbon_content(product['name'])
             carbon_out += product['production'] * w_c_by
 
         # --- Расчет выбросов CO2 ---
-        # Выбросы = (Углерод_вход - Углерод_выход) * Коэффициент_пересчета
         co2_emissions = (carbon_in - carbon_out) * self.CARBON_TO_CO2_FACTOR
         
-        # Выбросы не могут быть отрицательными
         return max(0, co2_emissions)

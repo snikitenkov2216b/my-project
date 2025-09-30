@@ -1,5 +1,5 @@
 # calculations/category_15.py - Модуль для расчетов по Категории 15.
-# Инкапсулирует бизнес-логику для производства ферросплавов.
+# Код обновлен для использования централизованных констант и валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -57,11 +57,15 @@ class Category15Calculator:
         
         # Углерод из сырья, материалов и восстановителей (кокс, электроды и т.д.)
         for material in raw_materials:
+            if material.get('consumption', 0) < 0:
+                raise ValueError("Расход сырья и восстановителей не может быть отрицательным.")
             w_c = self._get_carbon_content(material['name'])
             carbon_in += material['consumption'] * w_c
             
         # Углерод из топлива
         for fuel in fuels:
+            if fuel.get('consumption', 0) < 0:
+                raise ValueError("Расход топлива не может быть отрицательным.")
             w_c = self._get_carbon_content(fuel['name'])
             carbon_in += fuel['consumption'] * w_c
 
@@ -70,11 +74,15 @@ class Category15Calculator:
         
         # Углерод в основной продукции (ферросплавах)
         for product in products:
+            if product.get('production', 0) < 0:
+                raise ValueError("Производство основной продукции не может быть отрицательным.")
             w_c = self._get_carbon_content(product['name'])
             carbon_out += product['production'] * w_c
             
         # Углерод в сопутствующих продуктах и отходах (шлак, пыль и т.д.)
         for product in by_products:
+            if product.get('production', 0) < 0:
+                raise ValueError("Выход сопутствующей продукции не может быть отрицательным.")
             w_c = self._get_carbon_content(product['name'])
             carbon_out += product['production'] * w_c
 

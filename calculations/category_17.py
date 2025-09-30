@@ -1,5 +1,5 @@
 # calculations/category_17.py - Модуль для расчетов по Категории 17.
-# Инкапсулирует бизнес-логику для прочих промышленных процессов.
+# Код обновлен для использования централизованных констант и валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -72,6 +72,9 @@ class Category17Calculator:
             carbonate_name = carbonate['name']
             carbonate_mass = carbonate['mass']
             
+            if carbonate_mass < 0:
+                raise ValueError(f"Масса для '{carbonate_name}' не может быть отрицательной.")
+
             ef_data = self.data_service.get_carbonate_data_table_6_1(carbonate_name)
             if not ef_data:
                 ef_data = self.data_service.get_glass_carbonate_data_table_8_1(carbonate_name)

@@ -1,6 +1,5 @@
 # calculations/category_6.py - Модуль для расчетов по Категории 6.
-# Инкапсулирует бизнес-логику для производства цемента.
-# Код обновлен для полной реализации формул 6.1 и 6.2 из методики.
+# Код обновлен для использования централизованных констант и валидации данных.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -20,7 +19,7 @@ class Category6Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR # ИСПОЛЬЗОВАНИЕ
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR
 
     def _get_carbon_content(self, material_name: str) -> float:
         """
@@ -40,7 +39,6 @@ class Category6Calculator:
         Рассчитывает выбросы CO2 на основе данных о расходе карбонатного сырья.
         
         Реализует формулу 6.1 из методических указаний.
-        E_CO2 = sum(M_j*EF_j*F_j) - sum(M_CD*W_j_CD*(1-F_CD)*EF_j) + sum(RMC_k*W_C_k*3.664)
 
         :param carbonates: Список словарей сырья. [{'name': str, 'mass': float, 'calcination_degree': float}]
         :param cement_dust: Словарь с данными о цементной пыли. {'mass': float, 'carbonate_fractions': list, 'calcination_degree': float}
@@ -61,7 +59,6 @@ class Category6Calculator:
         if cement_dust and cement_dust.get('mass', 0) > 0:
             m_cd = cement_dust['mass']
             f_cd = cement_dust.get('calcination_degree', 1.0)
-            # W_j_CD - доля исходного карбоната j в составе пыли
             for carb_fraction in cement_dust.get('carbonate_fractions', []):
                  carbonate_data = self.data_service.get_carbonate_data_table_6_1(carb_fraction['name'])
                  if not carbonate_data:
@@ -83,10 +80,9 @@ class Category6Calculator:
         Рассчитывает выбросы CO2 на основе данных о производстве клинкера.
         
         Реализует формулу 6.2 из методических указаний.
-        E_CO2 = CP * sum(W_i * EF_i) + M_CD * sum(W_i_CD * EF_i) + sum(RMC_k*W_C_k*3.664)
 
         :param clinker_production: Масса произведенного клинкера, т.
-        :param clinker_composition: Список словарей состава клинкера. [{'oxide_name': 'CaO', 'fraction': float}, {'oxide_name': 'MgO', 'fraction': float}]
+        :param clinker_composition: Список словарей состава клинкера. [{'oxide_name': 'CaO', 'fraction': float}, ...]
         :param cement_dust: Словарь с данными о цементной пыли. {'mass': float, 'oxide_composition': list}
         :param non_carbonate_materials: Список словарей некарбонатных материалов. [{'name': str, 'consumption': float}]
         :return: Масса выбросов CO2 в тоннах.

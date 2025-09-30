@@ -1,5 +1,4 @@
 # calculations/category_7.py - Модуль для расчетов по Категории 7.
-# Инкапсулирует бизнес-логику для производства извести.
 # Код обновлен для полной реализации формул 7.1 и 7.2 из методики.
 # Комментарии на русском. Поддержка UTF-8.
 
@@ -24,8 +23,7 @@ class Category7Calculator:
         """
         Рассчитывает выбросы CO2 на основе данных о расходе карбонатного сырья.
         
-        Реализует формулу 7.1 из методических указаний:
-        E_CO2 = sum(M_j*EF_j*F_j) - sum(M_LD*W_j_LD*(1-F_LD)*EF_j)
+        Реализует формулу 7.1 из методических указаний.
 
         :param carbonates: Список словарей сырья. [{'name': str, 'mass': float, 'calcination_degree': float}]
         :param lime_dust: Словарь с данными о пыли. {'mass': float, 'carbonate_fractions': list, 'calcination_degree': float}
@@ -60,11 +58,10 @@ class Category7Calculator:
         """
         Рассчитывает выбросы CO2 на основе данных о производстве извести.
         
-        Реализует формулу 7.2 из методических указаний:
-        E_CO2 = LP * sum(W_i * EF_i) + M_LD * sum(W_i_LD * EF_i)
+        Реализует формулу 7.2 из методических указаний.
 
         :param lime_production: Масса произведенной извести, т.
-        :param lime_composition: Список словарей состава извести. [{'oxide_name': 'CaO', 'fraction': float}, {'oxide_name': 'MgO', 'fraction': float}]
+        :param lime_composition: Список словарей состава извести. [{'oxide_name': 'CaO', 'fraction': float}, ...]
         :param lime_dust: Словарь с данными о пыли. {'mass': float, 'oxide_composition': list}
         :return: Масса выбросов CO2 в тоннах.
         """

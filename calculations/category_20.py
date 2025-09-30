@@ -1,6 +1,5 @@
 # calculations/category_20.py - Модуль для расчетов по Категории 20.
-# Инкапсулирует бизнес-логику для захоронения и переработки твердых отходов.
-# Код полностью соответствует формулам из Приказа Минприроды РФ от 27.05.2022 N 371.
+# Код обновлен с добавлением валидации входных данных.
 # Комментарии на русском. Поддержка UTF-8.
 
 import math
@@ -66,6 +65,9 @@ class Category20Calculator:
         emissions_list = []
 
         for waste_mass in historical_waste:
+            if waste_mass < 0:
+                raise ValueError("Масса отходов не может быть отрицательной.")
+            
             # Уравнение 1.7: Масса разложимого DOC, размещаемого за данный год
             ddocm_deposited = waste_mass * doc * doc_f * mcf
             
@@ -97,14 +99,18 @@ class Category20Calculator:
         :param treatment_type: Тип переработки ('Компостирование' или 'Анаэробное сбраживание').
         :return: Словарь с массами выбросов CH4 и N2O в тоннах.
         """
+        if waste_mass < 0:
+            raise ValueError("Масса отходов не может быть отрицательной.")
+
         treatment_data = self.data_service.get_biological_treatment_data_table_21_1(treatment_type)
         if not treatment_data:
             raise ValueError(f"Данные для типа переработки '{treatment_type}' не найдены.")
 
-        ef_ch4 = treatment_data['EF_CH4_wet'] # г/кг
-        ef_n2o = treatment_data['EF_N2O_wet'] # г/кг
+        ef_ch4 = treatment_data.get('EF_CH4_wet', 0.0) # г/кг
+        ef_n2o = treatment_data.get('EF_N2O_wet', 0.0) # г/кг
 
-        ch4_emissions = waste_mass * ef_ch4
-        n2o_emissions = waste_mass * n2o_emissions
+        # Выбросы (т) = Масса (т) * EF (г/кг) / 1000 (г/кг в т/т)
+        ch4_emissions = waste_mass * ef_ch4 / 1000
+        n2o_emissions = waste_mass * ef_n2o / 1000
 
         return {'ch4': ch4_emissions, 'n2o': n2o_emissions}

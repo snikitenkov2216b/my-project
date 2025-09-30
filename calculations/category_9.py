@@ -1,6 +1,5 @@
 # calculations/category_9.py - Модуль для расчетов по Категории 9.
-# Инкапсулирует бизнес-логику для производства керамических изделий.
-# Код обновлен для полной реализации формулы 9.1 из методики.
+# Код обновлен для полной реализации формулы 9.1 и добавления валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -39,8 +38,10 @@ class Category9Calculator:
             carbonate_name = material['carbonate_name']
             material_mass = material['material_mass']
             carbonate_fraction = material['carbonate_fraction']
-            # Степень кальцинирования F_j, по умолчанию 1.0
             calcination_degree = material.get('calcination_degree', 1.0)
+
+            if material_mass < 0 or not (0 <= carbonate_fraction <= 1) or not (0 <= calcination_degree <= 1):
+                raise ValueError(f"Для '{carbonate_name}' указаны некорректные значения. Масса должна быть неотрицательной, а доли - в диапазоне от 0 до 1.")
 
             # Коэффициенты выбросов для карбонатов берутся из Таблицы 6.1
             carbonate_data = self.data_service.get_carbonate_data_table_6_1(carbonate_name)

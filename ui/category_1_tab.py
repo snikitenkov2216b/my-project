@@ -1,10 +1,20 @@
 # ui/category_1_tab.py - Виджет вкладки для расчетов по Категории 1.
-# Код обновлен для приема калькулятора из фабрики.
+# Код обновлен для приема калькулятора, автоподстановки, подсказок и логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
-    QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox
+    QWidget,
+    QVBoxLayout,
+    QFormLayout,
+    QComboBox,
+    QLineEdit,
+    QPushButton,
+    QLabel,
+    QMessageBox,
+    QStackedWidget,
+    QHBoxLayout,
+    QGroupBox,
 )
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
@@ -12,18 +22,20 @@ from PyQt6.QtCore import Qt, QLocale
 from calculations.category_1 import Category1Calculator
 from config import OXIDATION_FACTOR_SOLID, OXIDATION_FACTOR_LIQUID, OXIDATION_FACTOR_GAS
 
+
 class Category1Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 1 "Стационарное сжигание топлива".
     """
+
     def __init__(self, calculator: Category1Calculator, parent=None):
         super().__init__(parent)
         self.calculator = calculator
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
-        
+
         self.gas_volume_rows = []
         self.gas_mass_rows = []
-        
+
         self._init_ui()
 
     def _init_ui(self):
@@ -33,27 +45,35 @@ class Category1Tab(QWidget):
         form_layout = QFormLayout()
         self.fuel_combobox = QComboBox()
         self.fuel_combobox.addItems(self.calculator.data_service.get_fuels_table_1_1())
-        self.fuel_combobox.setToolTip("Выберите вид сжигаемого топлива из справочника.")
+        self.fuel_combobox.setToolTip(
+            "Выберите вид сжигаемого топлива из справочника (Таблица 1.1)."
+        )
         form_layout.addRow("Вид топлива:", self.fuel_combobox)
 
         self.fuel_consumption_input = QLineEdit()
         validator_consumption = QDoubleValidator(0.0, 1e12, 6, self)
         validator_consumption.setLocale(self.c_locale)
         self.fuel_consumption_input.setValidator(validator_consumption)
-        self.fuel_consumption_input.setToolTip("Укажите годовой расход топлива в натуральных единицах (тонны или тыс. м³).")
-        form_layout.addRow("Расход топлива (в натуральных единицах):", self.fuel_consumption_input)
+        self.fuel_consumption_input.setToolTip(
+            "Укажите годовой расход топлива в натуральных единицах (тонны или тыс. м³)."
+        )
+        form_layout.addRow(
+            "Расход топлива (в нат. единицах):", self.fuel_consumption_input
+        )
         main_layout.addLayout(form_layout)
 
         ef_group = QGroupBox("Расчет коэффициента выбросов (EF)")
         ef_layout = QVBoxLayout(ef_group)
-        
+
         self.ef_method_combobox = QComboBox()
-        self.ef_method_combobox.addItems([
-            "Использовать стандартный EF (из Таблицы 1.1)",
-            "Расчет EF по содержанию углерода (Формула 1.5)",
-            "Расчет EF по объемному составу газа (Формула 1.3)",
-            "Расчет EF по массовому составу газа (Формула 1.4)"
-        ])
+        self.ef_method_combobox.addItems(
+            [
+                "Использовать стандартный EF (из Таблицы 1.1)",
+                "Расчет EF по содержанию углерода (Формула 1.5)",
+                "Расчет EF по объемному составу газа (Формула 1.3)",
+                "Расчет EF по массовому составу газа (Формула 1.4)",
+            ]
+        )
         self.ef_method_combobox.setToolTip(
             "Выберите метод расчета коэффициента выбросов.\n"
             "Стандартный - использует готовое значение из справочника.\n"
@@ -61,14 +81,16 @@ class Category1Tab(QWidget):
         )
         ef_layout.addWidget(QLabel("Метод определения EF:"))
         ef_layout.addWidget(self.ef_method_combobox)
-        
+
         self.ef_stacked_widget = QStackedWidget()
-        self.ef_stacked_widget.addWidget(QWidget())
+        self.ef_stacked_widget.addWidget(QWidget())  # Пустой виджет для первого метода
         self.ef_stacked_widget.addWidget(self._create_ef_from_carbon_widget())
         self.ef_stacked_widget.addWidget(self._create_ef_from_gas_volume_widget())
         self.ef_stacked_widget.addWidget(self._create_ef_from_gas_mass_widget())
         ef_layout.addWidget(self.ef_stacked_widget)
-        self.ef_method_combobox.currentIndexChanged.connect(self.ef_stacked_widget.setCurrentIndex)
+        self.ef_method_combobox.currentIndexChanged.connect(
+            self.ef_stacked_widget.setCurrentIndex
+        )
         main_layout.addWidget(ef_group)
 
         self.oxidation_factor_input = QLineEdit()
@@ -77,18 +99,20 @@ class Category1Tab(QWidget):
         self.oxidation_factor_input.setValidator(validator_oxidation)
         self.oxidation_factor_input.setToolTip(
             "Коэффициент полноты сгорания топлива (доля от 0 до 1).\n"
-            "Значение по умолчанию подставляется автоматически."
+            "Значение по умолчанию подставляется автоматически в зависимости от агрегатного состояния топлива."
         )
         ox_layout = QFormLayout()
         ox_layout.addRow("Коэффициент окисления (OF):", self.oxidation_factor_input)
         main_layout.addLayout(ox_layout)
-        
+
         self.fuel_combobox.currentIndexChanged.connect(self._update_oxidation_factor)
-        self._update_oxidation_factor()
+        self._update_oxidation_factor()  # Вызов для установки значения при запуске
 
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
-        main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
+        main_layout.addWidget(
+            self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
         self.result_label = QLabel("Результат:...")
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
@@ -101,14 +125,17 @@ class Category1Tab(QWidget):
         if not fuel_data:
             return
 
-        unit = fuel_data.get('unit', '')
-        if 'тыс. м3' in unit:
+        unit = fuel_data.get("unit", "")
+        if "тыс. м3" in unit:
             self.oxidation_factor_input.setText(str(OXIDATION_FACTOR_GAS))
-        elif any(solid in fuel_name.lower() for solid in ['уголь', 'кокс', 'торф', 'антрацит', 'сланцы', 'брикеты']):
+        elif any(
+            solid in fuel_name.lower()
+            for solid in ["уголь", "кокс", "торф", "антрацит", "сланцы", "брикеты"]
+        ):
             self.oxidation_factor_input.setText(str(OXIDATION_FACTOR_SOLID))
         else:
             self.oxidation_factor_input.setText(str(OXIDATION_FACTOR_LIQUID))
-            
+
     def _create_ef_from_carbon_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
@@ -116,17 +143,27 @@ class Category1Tab(QWidget):
         validator = QDoubleValidator(0.0, 1.0, 6, self)
         validator.setLocale(self.c_locale)
         self.carbon_content_input.setValidator(validator)
-        layout.addRow("Содержание углерода в топливе (доля, т C/т):", self.carbon_content_input)
+        self.carbon_content_input.setToolTip(
+            "Массовая доля углерода в топливе (т C/т)."
+        )
+        layout.addRow(
+            "Содержание углерода в топливе (доля):", self.carbon_content_input
+        )
         return widget
-        
+
     def _create_ef_from_gas_volume_widget(self):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         form = QFormLayout()
-        self.rho_co2_input = QLineEdit(str(self.calculator.data_service.get_density_data_table_1_2()['rho_CO2']))
+        self.rho_co2_input = QLineEdit(
+            str(self.calculator.data_service.get_density_data_table_1_2()["rho_CO2"])
+        )
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         self.rho_co2_input.setValidator(validator)
+        self.rho_co2_input.setToolTip(
+            "Плотность диоксида углерода при нормальных условиях (20 °C)."
+        )
         form.addRow("Плотность CO₂, кг/м³:", self.rho_co2_input)
         layout.addLayout(form)
 
@@ -146,9 +183,12 @@ class Category1Tab(QWidget):
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         self.fuel_density_input.setValidator(validator)
+        self.fuel_density_input.setToolTip(
+            "Плотность газообразного топлива при нормальных условиях."
+        )
         form.addRow("Плотность топлива, кг/м³:", self.fuel_density_input)
         layout.addLayout(form)
-        
+
         group_box = QGroupBox("Компоненты газа (массовые доли)")
         self.gas_mass_layout = QVBoxLayout(group_box)
         layout.addWidget(group_box)
@@ -158,101 +198,152 @@ class Category1Tab(QWidget):
         return widget
 
     def _add_gas_volume_row(self):
-        row = {'widget': QWidget()}
-        layout = QHBoxLayout(row['widget'])
-        row['fraction'] = QLineEdit(placeholderText="Доля, %")
-        row['carbon_atoms'] = QLineEdit(placeholderText="Атомов C")
+        row = {"widget": QWidget()}
+        layout = QHBoxLayout(row["widget"])
+        row["fraction"] = QLineEdit(placeholderText="Доля, %")
+        row["fraction"].setToolTip("Объемная доля компонента в смеси.")
+        row["carbon_atoms"] = QLineEdit(placeholderText="Атомов C")
+        row["carbon_atoms"].setToolTip("Число атомов углерода в молекуле компонента.")
         remove_button = QPushButton("Удалить")
-        layout.addWidget(row['fraction'])
-        layout.addWidget(row['carbon_atoms'])
+        layout.addWidget(row["fraction"])
+        layout.addWidget(row["carbon_atoms"])
         layout.addWidget(remove_button)
         self.gas_volume_rows.append(row)
-        self.gas_volume_layout.addWidget(row['widget'])
-        remove_button.clicked.connect(lambda: self._remove_row(row, self.gas_volume_layout, self.gas_volume_rows))
+        self.gas_volume_layout.addWidget(row["widget"])
+        remove_button.clicked.connect(
+            lambda: self._remove_row(row, self.gas_volume_layout, self.gas_volume_rows)
+        )
 
     def _add_gas_mass_row(self):
-        row = {'widget': QWidget()}
-        layout = QHBoxLayout(row['widget'])
-        row['fraction'] = QLineEdit(placeholderText="Доля, %")
-        row['carbon_atoms'] = QLineEdit(placeholderText="Атомов C")
-        row['molar_mass'] = QLineEdit(placeholderText="Молярная масса")
+        row = {"widget": QWidget()}
+        layout = QHBoxLayout(row["widget"])
+        row["fraction"] = QLineEdit(placeholderText="Доля, %")
+        row["fraction"].setToolTip("Массовая доля компонента в смеси.")
+        row["carbon_atoms"] = QLineEdit(placeholderText="Атомов C")
+        row["carbon_atoms"].setToolTip("Число атомов углерода в молекуле компонента.")
+        row["molar_mass"] = QLineEdit(placeholderText="Молярная масса")
+        row["molar_mass"].setToolTip("Молярная масса компонента, г/моль.")
         remove_button = QPushButton("Удалить")
-        layout.addWidget(row['fraction'])
-        layout.addWidget(row['carbon_atoms'])
-        layout.addWidget(row['molar_mass'])
+        layout.addWidget(row["fraction"])
+        layout.addWidget(row["carbon_atoms"])
+        layout.addWidget(row["molar_mass"])
         layout.addWidget(remove_button)
         self.gas_mass_rows.append(row)
-        self.gas_mass_layout.addWidget(row['widget'])
-        remove_button.clicked.connect(lambda: self._remove_row(row, self.gas_mass_layout, self.gas_mass_rows))
+        self.gas_mass_layout.addWidget(row["widget"])
+        remove_button.clicked.connect(
+            lambda: self._remove_row(row, self.gas_mass_layout, self.gas_mass_rows)
+        )
 
     def _remove_row(self, row, layout, storage):
-        row['widget'].deleteLater()
-        layout.removeWidget(row['widget'])
+        row["widget"].deleteLater()
+        layout.removeWidget(row["widget"])
         storage.remove(row)
 
     def _get_float(self, line_edit, field_name):
-        text = line_edit.text().replace(',', '.')
-        if not text: raise ValueError(f"Поле '{field_name}' не заполнено.")
+        text = line_edit.text().replace(",", ".")
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не заполнено.")
         return float(text)
 
     def _perform_calculation(self):
         try:
             fuel_name = self.fuel_combobox.currentText()
-            fuel_consumption = self._get_float(self.fuel_consumption_input, "Расход топлива")
-            oxidation_factor = self._get_float(self.oxidation_factor_input, "Коэффициент окисления")
-            
+            fuel_consumption = self._get_float(
+                self.fuel_consumption_input, "Расход топлива"
+            )
+            oxidation_factor = self._get_float(
+                self.oxidation_factor_input, "Коэффициент окисления"
+            )
+
             emission_factor = 0.0
             method_index = self.ef_method_combobox.currentIndex()
 
-            if method_index == 0: # Стандартный EF
-                fuel_data = self.calculator.data_service.get_fuel_data_table_1_1(fuel_name)
-                if not fuel_data or 'EF_CO2_ut' not in fuel_data:
+            if method_index == 0:  # Стандартный EF
+                fuel_data = self.calculator.data_service.get_fuel_data_table_1_1(
+                    fuel_name
+                )
+                if not fuel_data or "EF_CO2_ut" not in fuel_data:
                     raise ValueError(f"Стандартный EF для '{fuel_name}' не найден.")
-                emission_factor = fuel_data['EF_CO2_ut']
-            
-            elif method_index == 1: # Расчет по содержанию углерода
-                carbon_content = self._get_float(self.carbon_content_input, "Содержание углерода")
-                emission_factor = self.calculator.calculate_ef_from_carbon_content(carbon_content)
-            
-            elif method_index == 2: # Расчет по объемному составу
+                emission_factor = fuel_data["EF_CO2_ut"]
+
+            elif method_index == 1:  # Расчет по содержанию углерода
+                carbon_content = self._get_float(
+                    self.carbon_content_input, "Содержание углерода"
+                )
+                emission_factor = self.calculator.calculate_ef_from_carbon_content(
+                    carbon_content
+                )
+
+            elif method_index == 2:  # Расчет по объемному составу
                 rho_co2 = self._get_float(self.rho_co2_input, "Плотность CO2")
-                components = []
-                for i, row in enumerate(self.gas_volume_rows):
-                    fraction = self._get_float(row['fraction'], f"Доля компонента {i+1}")
-                    atoms = int(self._get_float(row['carbon_atoms'], f"Атомы C компонента {i+1}"))
-                    components.append({'volume_fraction': fraction, 'carbon_atoms': atoms})
-                if not components: raise ValueError("Добавьте хотя бы один компонент газа.")
-
-                total_fraction = sum(c['volume_fraction'] for c in components)
+                components = [
+                    {
+                        "volume_fraction": self._get_float(
+                            r["fraction"], f"Доля {i+1}"
+                        ),
+                        "carbon_atoms": int(
+                            self._get_float(r["carbon_atoms"], f"Атомы C {i+1}")
+                        ),
+                    }
+                    for i, r in enumerate(self.gas_volume_rows)
+                ]
+                if not components:
+                    raise ValueError("Добавьте хотя бы один компонент газа.")
+                total_fraction = sum(c["volume_fraction"] for c in components)
                 if not (99.9 <= total_fraction <= 100.1):
-                    raise ValueError(f"Сумма долей компонентов ({total_fraction}%) должна быть равна 100%.")
-                
-                emission_factor = self.calculator.calculate_ef_from_gas_composition_volume(components, rho_co2)
+                    raise ValueError(
+                        f"Сумма долей компонентов ({total_fraction}%) должна быть равна 100%."
+                    )
+                emission_factor = (
+                    self.calculator.calculate_ef_from_gas_composition_volume(
+                        components, rho_co2
+                    )
+                )
 
-            elif method_index == 3: # Расчет по массовому составу
-                fuel_density = self._get_float(self.fuel_density_input, "Плотность топлива")
-                components = []
-                for i, row in enumerate(self.gas_mass_rows):
-                    fraction = self._get_float(row['fraction'], f"Доля компонента {i+1}")
-                    atoms = int(self._get_float(row['carbon_atoms'], f"Атомы C компонента {i+1}"))
-                    molar_mass = self._get_float(row['molar_mass'], f"Молярная масса компонента {i+1}")
-                    components.append({'mass_fraction': fraction, 'carbon_atoms': atoms, 'molar_mass': molar_mass})
-                if not components: raise ValueError("Добавьте хотя бы один компонент газа.")
-
-                total_fraction = sum(c['mass_fraction'] for c in components)
+            elif method_index == 3:  # Расчет по массовому составу
+                fuel_density = self._get_float(
+                    self.fuel_density_input, "Плотность топлива"
+                )
+                components = [
+                    {
+                        "mass_fraction": self._get_float(r["fraction"], f"Доля {i+1}"),
+                        "carbon_atoms": int(
+                            self._get_float(r["carbon_atoms"], f"Атомы C {i+1}")
+                        ),
+                        "molar_mass": self._get_float(
+                            r["molar_mass"], f"Молярная масса {i+1}"
+                        ),
+                    }
+                    for i, r in enumerate(self.gas_mass_rows)
+                ]
+                if not components:
+                    raise ValueError("Добавьте хотя бы один компонент газа.")
+                total_fraction = sum(c["mass_fraction"] for c in components)
                 if not (99.9 <= total_fraction <= 100.1):
-                    raise ValueError(f"Сумма долей компонентов ({total_fraction}%) должна быть равна 100%.")
-
-                emission_factor = self.calculator.calculate_ef_from_gas_composition_mass(components, fuel_density)
+                    raise ValueError(
+                        f"Сумма долей компонентов ({total_fraction}%) должна быть равна 100%."
+                    )
+                emission_factor = (
+                    self.calculator.calculate_ef_from_gas_composition_mass(
+                        components, fuel_density
+                    )
+                )
 
             co2_emissions = self.calculator.calculate_total_emissions(
                 fuel_consumption, emission_factor, oxidation_factor
             )
-
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
+            logging.info(f"Category 1 calculation successful: CO2={co2_emissions}")
 
         except ValueError as e:
+            logging.error(f"Category 1 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
-            QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
+            logging.critical(
+                f"Category 1 Calculation - Unexpected error: {e}", exc_info=True
+            )
+            QMessageBox.critical(
+                self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}"
+            )
             self.result_label.setText("Результат: Ошибка")

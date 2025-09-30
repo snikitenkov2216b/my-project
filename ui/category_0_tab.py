@@ -1,23 +1,33 @@
 # ui/category_0_tab.py - Виджет вкладки для Категории 0.
-# Код обновлен для приема калькулятора из фабрики.
+# Код обновлен для приема калькулятора из фабрики и для логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QFormLayout, QLineEdit,
-    QPushButton, QLabel, QMessageBox, QGroupBox
+    QWidget,
+    QVBoxLayout,
+    QFormLayout,
+    QLineEdit,
+    QPushButton,
+    QLabel,
+    QMessageBox,
+    QGroupBox,
 )
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_0 import Category0Calculator
 
+
 class Category0Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 0 "Расчет расхода по балансу".
     """
+
     def __init__(self, calculator: Category0Calculator, parent=None):
         super().__init__(parent)
         self.calculator = calculator
+        # Локаль для корректного ввода дробных чисел (точка или запятая)
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -29,16 +39,36 @@ class Category0Tab(QWidget):
         input_group = QGroupBox("Расчет фактического расхода ресурса (Формула 1)")
         form_layout = QFormLayout(input_group)
 
-        self.input_postuplenie = self._create_line_edit((0.0, 1e12, 6), "Масса поступившего ресурса")
+        self.input_postuplenie = self._create_line_edit(
+            "Масса или объем поступившего ресурса (тонны или тыс. м³)"
+        )
+        self.input_postuplenie.setToolTip(
+            "Введите общее количество ресурса, поступившего в организацию за отчетный период."
+        )
         form_layout.addRow("Поступление (M_пост):", self.input_postuplenie)
 
-        self.input_otgruzka = self._create_line_edit((0.0, 1e12, 6), "Масса отгруженного ресурса")
+        self.input_otgruzka = self._create_line_edit(
+            "Масса или объем отгруженного ресурса (тонны или тыс. м³)"
+        )
+        self.input_otgruzka.setToolTip(
+            "Введите общее количество ресурса, отгруженного на сторону за отчетный период."
+        )
         form_layout.addRow("Отгрузка (M_отгр):", self.input_otgruzka)
 
-        self.input_zapas_nachalo = self._create_line_edit((0.0, 1e12, 6), "Запас на начало периода")
+        self.input_zapas_nachalo = self._create_line_edit(
+            "Запас на начало отчетного периода"
+        )
+        self.input_zapas_nachalo.setToolTip(
+            "Введите количество ресурса на складах организации на начало периода."
+        )
         form_layout.addRow("Запас на начало (M_запас_нач):", self.input_zapas_nachalo)
 
-        self.input_zapas_konets = self._create_line_edit((0.0, 1e12, 6), "Запас на конец периода")
+        self.input_zapas_konets = self._create_line_edit(
+            "Запас на конец отчетного периода"
+        )
+        self.input_zapas_konets.setToolTip(
+            "Введите количество ресурса на складах организации на конец периода."
+        )
         form_layout.addRow("Запас на конец (M_запас_кон):", self.input_zapas_konets)
 
         main_layout.addWidget(input_group)
@@ -46,24 +76,28 @@ class Category0Tab(QWidget):
         # --- Кнопка и результат ---
         self.calculate_button = QPushButton("Рассчитать расход")
         self.calculate_button.clicked.connect(self._perform_calculation)
-        main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
+        main_layout.addWidget(
+            self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
         self.result_label = QLabel("Расход (M_расход): ...")
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-    def _create_line_edit(self, validator_params, placeholder=""):
+    def _create_line_edit(self, placeholder=""):
         """Вспомогательная функция для создания поля ввода с валидатором."""
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder)
-        validator = QDoubleValidator(*validator_params, self)
+        validator = QDoubleValidator(
+            -1e12, 1e12, 6, self
+        )  # Разрешаем отрицательные для запасов
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
         return line_edit
 
     def _get_float(self, line_edit, field_name):
         """Вспомогательная функция для получения числового значения из поля ввода."""
-        text = line_edit.text().replace(',', '.')
+        text = line_edit.text().replace(",", ".")
         if not text:
             raise ValueError(f"Поле '{field_name}' не может быть пустым.")
         return float(text)
@@ -80,14 +114,23 @@ class Category0Tab(QWidget):
                 поступление=postuplenie,
                 отгрузка=otgruzka,
                 запас_начало=zapas_nachalo,
-                запас_конец=zapas_konets
+                запас_конец=zapas_konets,
             )
 
-            self.result_label.setText(f"Расход (M_расход): {rashod:.4f} тонн (или тыс. м³)")
+            self.result_label.setText(
+                f"Расход (M_расход): {rashod:.4f} тонн (или тыс. м³)"
+            )
+            logging.info(f"Category 0 calculation successful: rashod={rashod}")
 
         except ValueError as e:
+            logging.error(f"Category 0 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Расход (M_расход): Ошибка")
         except Exception as e:
-            QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
+            logging.critical(
+                f"Category 0 Calculation - Unexpected error: {e}", exc_info=True
+            )
+            QMessageBox.critical(
+                self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}"
+            )
             self.result_label.setText("Расход (M_расход): Ошибка")

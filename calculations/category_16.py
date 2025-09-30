@@ -1,6 +1,5 @@
 # calculations/category_16.py - Модуль для расчетов по Категории 16.
-# Инкапсулирует бизнес-логику для производства первичного алюминия.
-# Код обновлен для полной реализации всех формул (16.1 - 16.22) из методики.
+# Код обновлен для использования централизованных констант и валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -32,6 +31,9 @@ class Category16Calculator:
         :param aed: Средняя продолжительность анодных эффектов, минут/шт.
         :return: Словарь с общими выбросами CF4 и C2F6 в тоннах.
         """
+        if aluminium_production < 0 or aef < 0 or aed < 0:
+            raise ValueError("Все входные параметры для расчета ПФУ должны быть неотрицательными.")
+
         tech_data = self.data_service.get_aluminium_tech_data_table_16_1(technology)
         if not tech_data:
             raise ValueError(f"Данные для технологии '{technology}' не найдены в таблице 16.1.")
@@ -55,16 +57,15 @@ class Category16Calculator:
         return {'cf4': total_cf4, 'c2f6': total_c2f6}
 
     def calculate_soderberg_co2_emissions(self, 
-                                          anode_paste_consumption: float, 
-                                          h_content: float, 
-                                          s_content: float, 
-                                          z_content: float,
-                                          # Параметры для детализированного расчета потерь (опционально)
-                                          tar_loss_params: dict = None,
-                                          dust_loss_params: dict = None,
-                                          foam_loss_params: dict = None,
-                                          wet_scrubbing_params: dict = None
-                                          ) -> float:
+        anode_paste_consumption: float, 
+        h_content: float, 
+        s_content: float, 
+        z_content: float,
+        tar_loss_params: dict = None,
+        dust_loss_params: dict = None,
+        foam_loss_params: dict = None,
+        wet_scrubbing_params: dict = None
+        ) -> float:
         """
         Рассчитывает удельные выбросы CO2 от электролизеров Содерберга.
         Реализует формулу 16.6 и связанные с ней (16.7 - 16.16).
@@ -75,48 +76,43 @@ class Category16Calculator:
         # Формула 16.8: Потери анодной массы с серой и золой
         m_am_sz = anode_paste_consumption * ((s_content + z_content) / 100)
         
-        # Расчет детализированных потерь углерода, если данные предоставлены
         m_c_tar = 0.0
         if tar_loss_params:
-            # Формулы 16.9, 16.10, 16.11
-            p_sm_r = tar_loss_params['p_sm_r']
-            w_c_sm = tar_loss_params['w_c_sm'] / 100
+            p_sm_r = tar_loss_params.get('p_sm_r', 0.0)
+            w_c_sm = tar_loss_params.get('w_c_sm', 0.0) / 100
             eta_k = tar_loss_params.get('eta_k', 0.0)
-            p_sm_psh = tar_loss_params.get('p_sm_psh', 0.0) # Потери при перестановке штырей
+            p_sm_psh = tar_loss_params.get('p_sm_psh', 0.0)
             
             p_sm_f = (1 - eta_k) * p_sm_r + p_sm_psh
             
             if tar_loss_params.get('has_wet_scrubber', False):
                  m_c_tar = (p_sm_f / 1000 * w_c_sm) + (p_sm_r / 1000 * w_c_sm)
-            else: # Сухая газоочистка
+            else:
                  m_c_tar = (p_sm_f / 1000) * w_c_sm
 
         m_c_dust = 0.0
         if dust_loss_params:
-            # Формулы 16.12, 16.13, 16.14
-            p_pyl_r = dust_loss_params['p_pyl_r']
-            w_c_pyl = dust_loss_params['w_c_pyl'] / 100
+            p_pyl_r = dust_loss_params.get('p_pyl_r', 0.0)
+            w_c_pyl = dust_loss_params.get('w_c_pyl', 0.0) / 100
             eta_k = dust_loss_params.get('eta_k', 0.0)
             
             p_pyl_f = (1 - eta_k) * p_pyl_r
             
             if dust_loss_params.get('has_wet_scrubber', False):
                 m_c_dust = (p_pyl_f / 1000 * w_c_pyl) + (p_pyl_r / 1000 * w_c_pyl)
-            else: # Сухая газоочистка
+            else:
                 m_c_dust = (p_pyl_f / 1000) * w_c_pyl
 
         m_c_foam = 0.0
         if foam_loss_params:
-            # Формула 16.15
-            p_pena_vyh = foam_loss_params['p_pena_vyh']
-            w_c_pena = foam_loss_params['w_c_pena'] / 100
+            p_pena_vyh = foam_loss_params.get('p_pena_vyh', 0.0)
+            w_c_pena = foam_loss_params.get('w_c_pena', 0.0) / 100
             m_c_foam = (p_pena_vyh / 1000) * w_c_pena
 
         e_co2_mo = 0.0
         if wet_scrubbing_params:
-            # Формула 16.16
-            p_so2 = wet_scrubbing_params['p_so2']
-            eta_so2 = wet_scrubbing_params['eta_so2']
+            p_so2 = wet_scrubbing_params.get('p_so2', 0.0)
+            eta_so2 = wet_scrubbing_params.get('eta_so2', 0.0)
             e_co2_mo = (p_so2 / 1000) * eta_so2 * (44 / 64)
 
         # Формула 16.6
@@ -131,16 +127,14 @@ class Category16Calculator:
         """
         m_c_dust = 0.0
         if dust_loss_params:
-            # Формула 16.19 (аналогична 16.14)
-             p_pyl_f = dust_loss_params['p_pyl_f']
-             w_c_pyl = dust_loss_params['w_c_pyl'] / 100
+             p_pyl_f = dust_loss_params.get('p_pyl_f', 0.0)
+             w_c_pyl = dust_loss_params.get('w_c_pyl', 0.0) / 100
              m_c_dust = (p_pyl_f / 1000) * w_c_pyl
 
         m_c_foam = 0.0
         if foam_loss_params:
-            # Формула 16.20 (аналогична 16.15)
-            p_pena_vyh = foam_loss_params['p_pena_vyh']
-            w_c_pena = foam_loss_params['w_c_pena'] / 100
+            p_pena_vyh = foam_loss_params.get('p_pena_vyh', 0.0)
+            w_c_pena = foam_loss_params.get('w_c_pena', 0.0) / 100
             m_c_foam = (p_pena_vyh / 1000) * w_c_pena
             
         # Формула 16.18
@@ -153,6 +147,9 @@ class Category16Calculator:
         Рассчитывает выбросы CO2 от угара при прокалке кокса.
         Реализует формулу 16.21.
         """
+        if raw_coke_consumption < 0 or coke_loss_factor < 0 or carbon_content < 0:
+            raise ValueError("Все входные параметры должны быть неотрицательными.")
+            
         e_co2_kp = (raw_coke_consumption * coke_loss_factor / 100) * (carbon_content / 100) * self.CARBON_TO_CO2_FACTOR
         return e_co2_kp
         
@@ -161,5 +158,8 @@ class Category16Calculator:
         Рассчитывает выбросы CO2 от обжига "зеленых" анодов.
         Реализует формулу 16.22.
         """
+        if green_anode_production < 0:
+            raise ValueError("Производство анодов не может быть отрицательным.")
+            
         m_co2_obzh = green_anode_production * 0.066 * self.CARBON_TO_CO2_FACTOR
         return m_co2_obzh

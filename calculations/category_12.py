@@ -1,6 +1,5 @@
 # calculations/category_12.py - Модуль для расчетов по Категории 12.
-# Инкапсулирует бизнес-логику для нефтехимического производства.
-# Код обновлен для полной реализации формул 12.1 и 12.2 из методики.
+# Код обновлен для использования централизованных констант и валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
@@ -22,7 +21,7 @@ class Category12Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR # ИСПОЛЬЗОВАНИЕ
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR
         # Инициализируем калькуляторы других категорий для метода 12.2
         self.cat1_calc = Category1Calculator(data_service)
         self.cat2_calc = Category2Calculator(data_service)
@@ -60,11 +59,25 @@ class Category12Calculator:
         :return: Масса выбросов CO2 в тоннах.
         """
         # Входящий углерод
-        carbon_in = sum(m['consumption'] * self._get_carbon_content(m['name']) for m in raw_materials)
+        carbon_in = 0
+        for m in raw_materials:
+            if m['consumption'] < 0:
+                raise ValueError("Расход сырья не может быть отрицательным.")
+            carbon_in += m['consumption'] * self._get_carbon_content(m['name'])
 
         # Выходящий углерод
-        carbon_out_primary = sum(p['production'] * self._get_carbon_content(p['name']) for p in primary_products)
-        carbon_out_by_products = sum(b['production'] * self._get_carbon_content(b['name']) for b in by_products)
+        carbon_out_primary = 0
+        for p in primary_products:
+            if p['production'] < 0:
+                raise ValueError("Производство основной продукции не может быть отрицательным.")
+            carbon_out_primary += p['production'] * self._get_carbon_content(p['name'])
+            
+        carbon_out_by_products = 0
+        for b in by_products:
+            if b['production'] < 0:
+                raise ValueError("Производство сопутствующей продукции не может быть отрицательным.")
+            carbon_out_by_products += b['production'] * self._get_carbon_content(b['name'])
+            
         carbon_out = carbon_out_primary + carbon_out_by_products
 
         co2_emissions = (carbon_in - carbon_out) * self.CARBON_TO_CO2_FACTOR

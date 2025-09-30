@@ -1,70 +1,81 @@
 # ui/category_22_tab.py - Виджет вкладки для расчетов по Категории 22.
-# Реализует интерфейс для расчетов выбросов при сжигании отходов.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора, добавления подсказок и логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
-    QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox, QScrollArea
+    QWidget,
+    QVBoxLayout,
+    QFormLayout,
+    QComboBox,
+    QLineEdit,
+    QPushButton,
+    QLabel,
+    QMessageBox,
+    QStackedWidget,
+    QHBoxLayout,
+    QGroupBox,
+    QScrollArea,
 )
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_22 import Category22Calculator
+
 
 class Category22Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 22 "Сжигание отходов".
     """
-    def __init__(self, data_service: DataService, parent=None):
-        super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category22Calculator(self.data_service)
-        
-        self.multicomponent_rows = []
 
+    def __init__(self, calculator: Category22Calculator, parent=None):
+        super().__init__(parent)
+        self.calculator = calculator
+        self.multicomponent_rows = []
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        # --- Выбор типа расчета ---
         method_layout = QFormLayout()
         self.method_combobox = QComboBox()
-        self.method_combobox.addItems([
-            "CO2 от твердых отходов (общий метод, Ф. 3)",
-            "CO2 от многокомпонентных отходов (ТКО, Ф. 3.1)",
-            "CO2 от ископаемых жидких отходов (Ф. 3.2)",
-            "N2O от сжигания отходов (Ф. 3.3)"
-        ])
+        self.method_combobox.addItems(
+            [
+                "CO2 от твердых отходов (общий метод, Ф. 3)",
+                "CO2 от многокомпонентных отходов (ТКО, Ф. 3.1)",
+                "CO2 от ископаемых жидких отходов (Ф. 3.2)",
+                "N2O от сжигания отходов (Ф. 3.3)",
+            ]
+        )
         method_layout.addRow("Выберите тип расчета:", self.method_combobox)
         main_layout.addLayout(method_layout)
-        
-        # --- Стек виджетов ---
+
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_solid_waste_widget())
         self.stacked_widget.addWidget(self._create_multicomponent_widget())
         self.stacked_widget.addWidget(self._create_liquid_waste_widget())
         self.stacked_widget.addWidget(self._create_n2o_widget())
         main_layout.addWidget(self.stacked_widget)
-        
-        self.method_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
-        
-        # --- Кнопка и результат ---
+        self.method_combobox.currentIndexChanged.connect(
+            self.stacked_widget.setCurrentIndex
+        )
+
         self.calculate_button = QPushButton("Рассчитать выбросы")
         self.calculate_button.clicked.connect(self._perform_calculation)
-        main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
-
+        main_layout.addWidget(
+            self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
         self.result_label = QLabel("Результат:...")
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-    def _create_line_edit(self, default_text="", validator_params=None, placeholder=""):
+    def _create_line_edit(
+        self, default_text="", validator_params=None, placeholder="", tooltip=""
+    ):
         line_edit = QLineEdit(default_text)
         line_edit.setPlaceholderText(placeholder)
+        line_edit.setToolTip(tooltip)
         if validator_params:
             validator = QDoubleValidator(*validator_params, self)
             validator.setLocale(self.c_locale)
@@ -74,24 +85,37 @@ class Category22Tab(QWidget):
     def _create_solid_waste_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
-        self.solid_waste_mass = self._create_line_edit("", (0.0, 1e9, 6))
-        self.solid_waste_mass.setToolTip("Общая масса сожженных отходов за год, в тоннах.")
-        layout.addRow("Масса сожженных отходов (т/год):", self.solid_waste_mass)
-        
-        self.solid_dm_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
-        self.solid_dm_fraction.setToolTip("Доля сухого вещества в отходах (dry matter fraction).")
+        self.solid_waste_mass = self._create_line_edit(
+            "", (0.0, 1e9, 6), tooltip="Общая масса сожженных отходов за год, в тоннах."
+        )
+        layout.addRow("Масса отходов (т/год):", self.solid_waste_mass)
+        self.solid_dm_fraction = self._create_line_edit(
+            "",
+            (0.0, 1.0, 4),
+            "доля от 0 до 1",
+            "Доля сухого вещества в отходах (dry matter fraction).",
+        )
         layout.addRow("Доля сухого вещества (dm):", self.solid_dm_fraction)
-        
-        self.solid_cf_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
-        self.solid_cf_fraction.setToolTip("Доля углерода в сухом веществе отходов (carbon fraction).")
+        self.solid_cf_fraction = self._create_line_edit(
+            "",
+            (0.0, 1.0, 4),
+            "доля от 0 до 1",
+            "Доля углерода в сухом веществе отходов (carbon fraction).",
+        )
         layout.addRow("Доля углерода в сухом веществе (CF):", self.solid_cf_fraction)
-        
-        self.solid_fcf_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
-        self.solid_fcf_fraction.setToolTip("Доля ископаемого (небиогенного) углерода в общем углероде (fossil carbon fraction).")
+        self.solid_fcf_fraction = self._create_line_edit(
+            "",
+            (0.0, 1.0, 4),
+            "доля от 0 до 1",
+            "Доля ископаемого (небиогенного) углерода в общем углероде (fossil carbon fraction).",
+        )
         layout.addRow("Доля ископаемого углерода (FCF):", self.solid_fcf_fraction)
-        
-        self.solid_of_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
-        self.solid_of_fraction.setToolTip("Коэффициент полноты сгорания (oxidation factor).")
+        self.solid_of_fraction = self._create_line_edit(
+            "",
+            (0.0, 1.0, 4),
+            "доля от 0 до 1",
+            "Коэффициент полноты сгорания (oxidation factor).",
+        )
         layout.addRow("Коэффициент окисления (OF):", self.solid_of_fraction)
         return widget
 
@@ -100,24 +124,27 @@ class Category22Tab(QWidget):
         scroll_area.setWidgetResizable(True)
         widget = QWidget()
         layout = QVBoxLayout(widget)
-
         form = QFormLayout()
-        self.multi_total_mass = self._create_line_edit("", (0.0, 1e9, 6))
-        self.multi_total_mass.setToolTip("Общая масса сожженных многокомпонентных отходов за год, в тоннах.")
-        form.addRow("Общая масса сожженных отходов (т/год):", self.multi_total_mass)
-        
-        self.multi_of_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
-        self.multi_of_fraction.setToolTip("Коэффициент полноты сгорания (oxidation factor).")
+        self.multi_total_mass = self._create_line_edit(
+            "",
+            (0.0, 1e9, 6),
+            tooltip="Общая масса сожженных многокомпонентных отходов за год, в тоннах.",
+        )
+        form.addRow("Общая масса отходов (т/год):", self.multi_total_mass)
+        self.multi_of_fraction = self._create_line_edit(
+            "",
+            (0.0, 1.0, 4),
+            "доля от 0 до 1",
+            "Коэффициент полноты сгорания (oxidation factor).",
+        )
         form.addRow("Коэффициент окисления (OF):", self.multi_of_fraction)
         layout.addLayout(form)
-
         group = QGroupBox("Морфологический состав отходов")
         self.multicomponent_layout = QVBoxLayout(group)
         add_btn = QPushButton("Добавить компонент")
         add_btn.clicked.connect(self._add_multicomponent_row)
         self.multicomponent_layout.addWidget(add_btn)
         layout.addWidget(group)
-
         scroll_area.setWidget(widget)
         return scroll_area
 
@@ -125,35 +152,45 @@ class Category22Tab(QWidget):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         combo = QComboBox()
-        combo.addItems(self.data_service.get_waste_component_types_20_2())
-        
-        fraction_input = self._create_line_edit("", (0.0, 1.0, 4), "Доля компонента (0-1)")
-        ### НОВОЕ: Добавляем подсказку ###
-        fraction_input.setToolTip("Массовая доля данного компонента в общей массе отходов.\nСумма долей всех компонентов должна быть равна 1.")
-
+        combo.addItems(self.calculator.data_service.get_waste_component_types_20_2())
+        fraction_input = self._create_line_edit(
+            "",
+            (0.0, 1.0, 4),
+            "Доля компонента (0-1)",
+            "Массовая доля компонента. Сумма долей должна быть равна 1.",
+        )
         remove_button = QPushButton("Удалить")
         row_layout.addWidget(combo)
         row_layout.addWidget(fraction_input)
         row_layout.addWidget(remove_button)
-        
-        row_data = {'widget': row_widget, 'combo': combo, 'fraction': fraction_input}
+        row_data = {"widget": row_widget, "combo": combo, "fraction": fraction_input}
         self.multicomponent_rows.append(row_data)
-        self.multicomponent_layout.insertWidget(self.multicomponent_layout.count() - 1, row_widget)
-        remove_button.clicked.connect(lambda: self._remove_row(row_data, self.multicomponent_layout, self.multicomponent_rows))
+        self.multicomponent_layout.insertWidget(
+            self.multicomponent_layout.count() - 1, row_widget
+        )
+        remove_button.clicked.connect(
+            lambda: self._remove_row(
+                row_data, self.multicomponent_layout, self.multicomponent_rows
+            )
+        )
 
     def _remove_row(self, row_data, layout, storage):
-        row_data['widget'].deleteLater()
-        layout.removeWidget(row_data['widget'])
+        row_data["widget"].deleteLater()
+        layout.removeWidget(row_data["widget"])
         storage.remove(row_data)
 
     def _create_liquid_waste_widget(self):
         widget = QWidget()
         layout = QFormLayout(widget)
         self.liquid_waste_mass = self._create_line_edit("", (0.0, 1e9, 6))
-        layout.addRow("Масса сожженных жидких отходов (т/год):", self.liquid_waste_mass)
-        self.liquid_carbon_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
-        layout.addRow("Доля углерода в жидких отходах (CLW):", self.liquid_carbon_fraction)
-        self.liquid_of_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        layout.addRow("Масса жидких отходов (т/год):", self.liquid_waste_mass)
+        self.liquid_carbon_fraction = self._create_line_edit(
+            "", (0.0, 1.0, 4), "доля от 0 до 1"
+        )
+        layout.addRow("Доля углерода (CLW):", self.liquid_carbon_fraction)
+        self.liquid_of_fraction = self._create_line_edit(
+            "", (0.0, 1.0, 4), "доля от 0 до 1"
+        )
         layout.addRow("Коэффициент окисления (OF):", self.liquid_of_fraction)
         return widget
 
@@ -161,67 +198,80 @@ class Category22Tab(QWidget):
         widget = QWidget()
         layout = QFormLayout(widget)
         self.n2o_waste_mass = self._create_line_edit("", (0.0, 1e9, 6))
-        layout.addRow("Масса сожженных отходов (т/год, сырой вес):", self.n2o_waste_mass)
+        layout.addRow("Масса отходов (т/год, сырой вес):", self.n2o_waste_mass)
         self.n2o_ef_input = self._create_line_edit("", (0.0, 1e9, 6))
-        layout.addRow("Коэффициент выбросов N2O (кг/т отходов):", self.n2o_ef_input)
+        layout.addRow("Коэффициент выбросов N2O (кг/т):", self.n2o_ef_input)
         return widget
 
     def _get_float(self, line_edit, field_name):
-        text = line_edit.text().replace(',', '.')
-        if not text: raise ValueError(f"Поле '{field_name}' не заполнено.")
+        text = line_edit.text().replace(",", ".")
+        if not text:
+            raise ValueError(f"Поле '{field_name}' не заполнено.")
         return float(text)
 
     def _perform_calculation(self):
         try:
             method_index = self.method_combobox.currentIndex()
             result_text = ""
-
-            if method_index == 0: # CO2 от твердых отходов
+            if method_index == 0:
                 mass = self._get_float(self.solid_waste_mass, "Масса отходов")
                 dm = self._get_float(self.solid_dm_fraction, "Доля сухого вещества")
                 cf = self._get_float(self.solid_cf_fraction, "Доля углерода")
-                fcf = self._get_float(self.solid_fcf_fraction, "Доля ископаемого углерода")
-                of = self._get_float(self.solid_of_fraction, "Коэффициент окисления")
-                co2_emissions = self.calculator.calculate_co2_emissions_solid_waste(mass, dm, cf, fcf, of)
+                fcf = self._get_float(
+                    self.solid_fcf_fraction, "Доля ископаемого углерода"
+                )
+                of = self._get_float(self.solid_of_fraction, "Коэф. окисления")
+                co2_emissions = self.calculator.calculate_co2_emissions_solid_waste(
+                    mass, dm, cf, fcf, of
+                )
                 result_text = f"Результат: {co2_emissions:.4f} тонн CO2"
-
-            elif method_index == 1: # CO2 от многокомпонентных отходов
-                total_mass = self._get_float(self.multi_total_mass, "Общая масса отходов")
-                of = self._get_float(self.multi_of_fraction, "Коэффициент окисления")
-                if not self.multicomponent_rows: raise ValueError("Добавьте хотя бы один компонент отходов.")
-                
+            elif method_index == 1:
+                total_mass = self._get_float(self.multi_total_mass, "Общая масса")
+                of = self._get_float(self.multi_of_fraction, "Коэф. окисления")
+                if not self.multicomponent_rows:
+                    raise ValueError("Добавьте хотя бы один компонент отходов.")
                 composition = []
                 total_fraction = 0
                 for r in self.multicomponent_rows:
-                    fraction = self._get_float(r['fraction'], 'Доля компонента')
+                    fraction = self._get_float(r["fraction"], "Доля")
                     total_fraction += fraction
-                    composition.append({'type': r['combo'].currentText(), 'fraction': fraction})
-                
-                ### ИЗМЕНЕНО: Добавлена валидация суммы долей ###
+                    composition.append(
+                        {"type": r["combo"].currentText(), "fraction": fraction}
+                    )
                 if not (0.99 <= total_fraction <= 1.01):
-                    raise ValueError(f"Сумма долей компонентов ({total_fraction:.2f}) должна быть равна 1 (100%).")
-
-                co2_emissions = self.calculator.calculate_co2_emissions_multicomponent(total_mass, composition, of)
+                    raise ValueError(
+                        f"Сумма долей ({total_fraction:.2f}) должна быть равна 1."
+                    )
+                co2_emissions = self.calculator.calculate_co2_emissions_multicomponent(
+                    total_mass, composition, of
+                )
                 result_text = f"Результат: {co2_emissions:.4f} тонн CO2"
-
-            elif method_index == 2: # CO2 от жидких отходов
+            elif method_index == 2:
                 mass = self._get_float(self.liquid_waste_mass, "Масса жидких отходов")
-                carbon_fraction = self._get_float(self.liquid_carbon_fraction, "Доля углерода")
-                of = self._get_float(self.liquid_of_fraction, "Коэффициент окисления")
-                co2_emissions = self.calculator.calculate_co2_emissions_liquid_waste(mass, carbon_fraction, of)
+                carbon_fraction = self._get_float(
+                    self.liquid_carbon_fraction, "Доля углерода"
+                )
+                of = self._get_float(self.liquid_of_fraction, "Коэф. окисления")
+                co2_emissions = self.calculator.calculate_co2_emissions_liquid_waste(
+                    mass, carbon_fraction, of
+                )
                 result_text = f"Результат: {co2_emissions:.4f} тонн CO2"
-
-            elif method_index == 3: # N2O от сжигания
+            elif method_index == 3:
                 mass = self._get_float(self.n2o_waste_mass, "Масса отходов")
-                ef = self._get_float(self.n2o_ef_input, "Коэффициент выбросов N2O")
-                n2o_emissions = self.calculator.calculate_n2o_emissions_from_incineration(mass, ef)
+                ef = self._get_float(self.n2o_ef_input, "Коэф. выбросов N2O")
+                n2o_emissions = (
+                    self.calculator.calculate_n2o_emissions_from_incineration(mass, ef)
+                )
                 result_text = f"Результат: {n2o_emissions:.4f} тонн N2O"
-
             self.result_label.setText(result_text)
-
+            logging.info(f"Category 22 calculation successful: {result_text}")
         except ValueError as e:
+            logging.error(f"Category 22 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
             self.result_label.setText("Результат: Ошибка")
         except Exception as e:
-            QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
+            logging.critical(
+                f"Category 22 Calculation - Unexpected error: {e}", exc_info=True
+            )
+            QMessageBox.critical(self, "Критическая ошибка", str(e))
             self.result_label.setText("Результат: Ошибка")

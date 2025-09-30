@@ -1,15 +1,14 @@
 # ui/main_window.py - Главное окно приложения.
-# Код обновлен для использования фабрики калькуляторов.
+# Код обновлен для добавления дашборда и использования фабрики калькуляторов.
 # Комментарии на русском. Поддержка UTF-8.
 
-import sys
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QApplication
-from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QMainWindow, QTabWidget
 
 from data_models import DataService
-from calculations.calculator_factory import CalculatorFactory # ИМПОРТ ФАБРИКИ
+from calculations.calculator_factory import CalculatorFactory
 
 # Импорт всех вкладок
+from ui.dashboard_tab import DashboardTab
 from ui.category_0_tab import Category0Tab
 from ui.category_1_tab import Category1Tab
 from ui.category_2_tab import Category2Tab
@@ -44,12 +43,10 @@ class MainWindow(QMainWindow):
     def __init__(self, data_service: DataService):
         super().__init__()
         self.data_service = data_service
-        # ИЗМЕНЕНО: Создаем фабрику калькуляторов
         self.calculator_factory = CalculatorFactory(self.data_service)
         
         self.setWindowTitle("Калькулятор выбросов парниковых газов")
         self.setGeometry(100, 100, 900, 700)
-        # self.setWindowIcon(QIcon('path/to/your/icon.png'))
 
         self._init_ui()
 
@@ -57,7 +54,10 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
-        # --- Добавляем все вкладки, передавая им готовый калькулятор ---
+        # Добавляем дашборд в самое начало
+        self.tabs.addTab(DashboardTab(self.tabs), "Главная панель")
+
+        # Добавляем все вкладки для категорий, передавая им готовый калькулятор
         self.tabs.addTab(Category0Tab(self.calculator_factory.get_calculator("Category0")), "Кат. 0: Расход ресурсов")
         self.tabs.addTab(Category1Tab(self.calculator_factory.get_calculator("Category1")), "Кат. 1: Стац. сжигание")
         self.tabs.addTab(Category2Tab(self.calculator_factory.get_calculator("Category2")), "Кат. 2: Факелы")

@@ -1,32 +1,41 @@
 # ui/category_15_tab.py - Виджет вкладки для расчетов по Категории 15.
-# Реализует интерфейс для метода углеродного баланса при производстве ферросплавов.
-# Код написан полностью, без сокращений.
+# Код обновлен для приема калькулятора, добавления подсказок и логирования.
 # Комментарии на русском. Поддержка UTF-8.
 
+import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
-    QPushButton, QLabel, QMessageBox, QGroupBox, QHBoxLayout, QScrollArea
+    QWidget,
+    QVBoxLayout,
+    QFormLayout,
+    QComboBox,
+    QLineEdit,
+    QPushButton,
+    QLabel,
+    QMessageBox,
+    QGroupBox,
+    QHBoxLayout,
+    QScrollArea,
 )
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
-from data_models import DataService
 from calculations.category_15 import Category15Calculator
+
 
 class Category15Tab(QWidget):
     """
     Класс виджета-вкладки для Категории 15 "Производство ферросплавов".
     """
-    def __init__(self, data_service: DataService, parent=None):
-        super().__init__(parent)
-        self.data_service = data_service
-        self.calculator = Category15Calculator(self.data_service)
-        
-        self.raw_material_rows = []
-        self.fuel_rows = []
-        self.product_rows = []
-        self.by_product_rows = []
 
+    def __init__(self, calculator: Category15Calculator, parent=None):
+        super().__init__(parent)
+        self.calculator = calculator
+        (
+            self.raw_material_rows,
+            self.fuel_rows,
+            self.product_rows,
+            self.by_product_rows,
+        ) = ([], [], [], [])
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -40,138 +49,168 @@ class Category15Tab(QWidget):
         scroll_area.setWidget(main_widget)
         main_layout.addWidget(scroll_area)
 
-        # --- Блок входящих потоков ---
         inputs_group = QGroupBox("Входящие потоки")
         inputs_layout = QVBoxLayout(inputs_group)
-
-        inputs_layout.addWidget(QLabel("Сырье и восстановители (кокс, электроды и др.):"))
+        inputs_layout.addWidget(
+            QLabel("Сырье и восстановители (кокс, электроды и др.):")
+        )
         self.raw_materials_layout = QVBoxLayout()
-        add_raw_material_button = QPushButton("Добавить сырье")
-        add_raw_material_button.clicked.connect(self._add_raw_material_row)
+        add_raw_button = QPushButton("Добавить сырье")
+        add_raw_button.clicked.connect(self._add_raw_material_row)
         inputs_layout.addLayout(self.raw_materials_layout)
-        inputs_layout.addWidget(add_raw_material_button)
-
+        inputs_layout.addWidget(add_raw_button)
         inputs_layout.addWidget(QLabel("Топливо:"))
         self.fuels_layout = QVBoxLayout()
         add_fuel_button = QPushButton("Добавить топливо")
         add_fuel_button.clicked.connect(self._add_fuel_row)
         inputs_layout.addLayout(self.fuels_layout)
         inputs_layout.addWidget(add_fuel_button)
-        
         form_container_layout.addWidget(inputs_group)
 
-        # --- Блок выходящих потоков ---
         outputs_group = QGroupBox("Выходящие потоки")
         outputs_layout = QVBoxLayout(outputs_group)
-
         outputs_layout.addWidget(QLabel("Основная продукция (ферросплавы):"))
         self.products_layout = QVBoxLayout()
         add_product_button = QPushButton("Добавить продукцию")
         add_product_button.clicked.connect(self._add_product_row)
         outputs_layout.addLayout(self.products_layout)
         outputs_layout.addWidget(add_product_button)
-
         outputs_layout.addWidget(QLabel("Сопутствующая продукция и отходы:"))
         self.by_products_layout = QVBoxLayout()
         add_by_product_button = QPushButton("Добавить сопутствующий продукт")
         add_by_product_button.clicked.connect(self._add_by_product_row)
         outputs_layout.addLayout(self.by_products_layout)
         outputs_layout.addWidget(add_by_product_button)
-
         form_container_layout.addWidget(outputs_group)
 
-        # --- Кнопка и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
-        form_container_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
-
+        form_container_layout.addWidget(
+            self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
         self.result_label = QLabel("Результат:...")
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        form_container_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
+        form_container_layout.addWidget(
+            self.result_label, alignment=Qt.AlignmentFlag.AlignLeft
+        )
 
     def _get_all_materials(self):
-        """Возвращает общий список материалов для металлургии."""
-        materials = self.data_service.get_metallurgy_material_names_table_14_1()
-        fuels = self.data_service.get_fuels_table_1_1()
+        materials = (
+            self.calculator.data_service.get_metallurgy_material_names_table_14_1()
+        )
+        fuels = self.calculator.data_service.get_fuels_table_1_1()
         return sorted(list(set(materials + fuels)))
 
     def _add_raw_material_row(self):
-        self._create_dynamic_row("Расход, т", self.raw_materials_layout, self.raw_material_rows, self._get_all_materials())
+        self._create_dynamic_row(
+            "Расход, т",
+            self.raw_materials_layout,
+            self.raw_material_rows,
+            self._get_all_materials(),
+        )
 
     def _add_fuel_row(self):
-        self._create_dynamic_row("Расход", self.fuels_layout, self.fuel_rows, self.data_service.get_fuels_table_1_1())
+        self._create_dynamic_row(
+            "Расход",
+            self.fuels_layout,
+            self.fuel_rows,
+            self.calculator.data_service.get_fuels_table_1_1(),
+        )
 
     def _add_product_row(self):
-        self._create_dynamic_row("Производство, т", self.products_layout, self.product_rows, self._get_all_materials())
+        self._create_dynamic_row(
+            "Производство, т",
+            self.products_layout,
+            self.product_rows,
+            self.calculator.data_service.get_ferroalloy_products(),
+        )
 
     def _add_by_product_row(self):
-        self._create_dynamic_row("Выход, т", self.by_products_layout, self.by_product_rows, self._get_all_materials())
+        self._create_dynamic_row(
+            "Выход, т",
+            self.by_products_layout,
+            self.by_products_layout,
+            self._get_all_materials(),
+        )
 
-    def _create_dynamic_row(self, placeholder_text: str, target_layout: QVBoxLayout, storage_list: list, item_list: list):
+    def _create_dynamic_row(
+        self,
+        placeholder_text: str,
+        target_layout: QVBoxLayout,
+        storage_list: list,
+        item_list: list,
+    ):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
-        
         combo = QComboBox()
         combo.addItems(item_list)
-        
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
-        
         remove_button = QPushButton("Удалить")
-        
         row_layout.addWidget(combo)
         row_layout.addWidget(line_edit)
         row_layout.addWidget(remove_button)
-        
-        row_data = {'widget': row_widget, 'combo': combo, 'input': line_edit}
+        row_data = {"widget": row_widget, "combo": combo, "input": line_edit}
         storage_list.append(row_data)
         target_layout.insertWidget(target_layout.count() - 1, row_widget)
-        
-        remove_button.clicked.connect(lambda: self._remove_row(row_data, target_layout, storage_list))
+        remove_button.clicked.connect(
+            lambda: self._remove_row(row_data, target_layout, storage_list)
+        )
 
-    def _remove_row(self, row_data: dict, target_layout: QVBoxLayout, storage_list: list):
-        row_widget = row_data['widget']
+    def _remove_row(
+        self, row_data: dict, target_layout: QVBoxLayout, storage_list: list
+    ):
+        row_widget = row_data["widget"]
         target_layout.removeWidget(row_widget)
         row_widget.deleteLater()
         storage_list.remove(row_data)
 
     def _get_float(self, line_edit, field_name):
-        text = line_edit.text().replace(',', '.')
+        text = line_edit.text().replace(",", ".")
         if not text:
             raise ValueError(f"Поле '{field_name}' не может быть пустым.")
         return float(text)
 
     def _perform_calculation(self):
         try:
+
             def collect_data(storage_list, key_name, list_name):
-                items = []
-                for i, row in enumerate(storage_list):
-                    name = row['combo'].currentText()
-                    value = self._get_float(row['input'], f"{list_name}, строка {i+1}")
-                    items.append({'name': name, key_name: value})
-                return items
+                return [
+                    {
+                        "name": r["combo"].currentText(),
+                        key_name: self._get_float(
+                            r["input"], f"{list_name}, строка {i+1}"
+                        ),
+                    }
+                    for i, r in enumerate(storage_list)
+                ]
 
-            raw_materials = collect_data(self.raw_material_rows, 'consumption', "Сырье и восстановители")
-            fuels = collect_data(self.fuel_rows, 'consumption', "Топливо")
-            products = collect_data(self.product_rows, 'production', "Основная продукция")
-            by_products = collect_data(self.by_product_rows, 'production', "Сопутствующая продукция")
-
+            raw_materials = collect_data(self.raw_material_rows, "consumption", "Сырье")
+            fuels = collect_data(self.fuel_rows, "consumption", "Топливо")
+            products = collect_data(self.product_rows, "production", "Продукция")
+            by_products = collect_data(
+                self.by_product_rows, "production", "Сопут. продукция"
+            )
             if not raw_materials and not fuels:
-                raise ValueError("Добавьте хотя бы один входящий поток (сырье или топливо).")
+                raise ValueError("Добавьте хотя бы один входящий поток.")
             if not products:
                 raise ValueError("Добавьте хотя бы один вид основной продукции.")
 
             co2_emissions = self.calculator.calculate_emissions(
                 raw_materials, fuels, products, by_products
             )
-
             self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
-
+            logging.info(f"Category 15 calculation successful: CO2={co2_emissions}")
         except ValueError as e:
+            logging.error(f"Category 15 Calculation - ValueError: {e}")
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
-            QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
+            logging.critical(
+                f"Category 15 Calculation - Unexpected error: {e}", exc_info=True
+            )
+            QMessageBox.critical(self, "Критическая ошибка", str(e))
             self.result_label.setText("Результат: Ошибка")
