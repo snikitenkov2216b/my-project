@@ -65,6 +65,7 @@ class Category5Tab(QWidget):
 
         main_product_layout = QFormLayout()
         self.main_product_consumption = QLineEdit()
+        # ИСПРАВЛЕНО
         main_product_validator = QDoubleValidator(0.0, 1e9, 6, self)
         main_product_validator.setLocale(self.c_locale)
         self.main_product_consumption.setValidator(main_product_validator)
@@ -99,6 +100,7 @@ class Category5Tab(QWidget):
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
+        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)

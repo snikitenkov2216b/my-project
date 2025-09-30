@@ -91,7 +91,7 @@ class Category15Tab(QWidget):
 
     def _get_all_materials(self):
         """Возвращает общий список материалов для металлургии."""
-        materials = self.data_service.get_metallurgy_material_names_14_1()
+        materials = self.data_service.get_metallurgy_material_names_table_14_1()
         fuels = self.data_service.get_fuels_table_1_1()
         return sorted(list(set(materials + fuels)))
 
@@ -116,6 +116,7 @@ class Category15Tab(QWidget):
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
+        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)

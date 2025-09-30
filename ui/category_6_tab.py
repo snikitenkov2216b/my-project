@@ -69,7 +69,7 @@ class Category6Tab(QWidget):
         layout = QVBoxLayout(widget)
 
         # Основное сырье
-        carb_group = self._create_dynamic_group("Основное карбонатное сырье", self.raw_carbonates_layout, self._add_raw_carbonate_row)
+        carb_group = self._create_dynamic_group("Основное карбонатное сырье", "raw_carbonates_layout", self._add_raw_carbonate_row)
         layout.addWidget(carb_group)
 
         # Цементная пыль
@@ -89,7 +89,7 @@ class Category6Tab(QWidget):
         layout.addWidget(dust_group)
 
         # Некарбонатное сырье
-        non_carb_group = self._create_dynamic_group("Некарбонатное сырье с содержанием углерода", self.raw_non_carbonates_layout, self._add_raw_non_carbonate_row)
+        non_carb_group = self._create_dynamic_group("Некарбонатное сырье с содержанием углерода", "raw_non_carbonates_layout", self._add_raw_non_carbonate_row)
         layout.addWidget(non_carb_group)
 
         scroll_area.setWidget(widget)
@@ -127,7 +127,7 @@ class Category6Tab(QWidget):
         layout.addWidget(dust_group)
         
         # Некарбонатное сырье
-        non_carb_group = self._create_dynamic_group("Некарбонатное сырье с содержанием углерода", self.clinker_non_carbonates_layout, self._add_clinker_non_carbonate_row)
+        non_carb_group = self._create_dynamic_group("Некарбонатное сырье с содержанием углерода", "clinker_non_carbonates_layout", self._add_clinker_non_carbonate_row)
         layout.addWidget(non_carb_group)
         
         scroll_area.setWidget(widget)
@@ -139,18 +139,19 @@ class Category6Tab(QWidget):
         line_edit = QLineEdit(default_text)
         line_edit.setPlaceholderText(placeholder)
         if validator_params:
+            # ИСПРАВЛЕНО
             validator = QDoubleValidator(*validator_params, self)
             validator.setLocale(self.c_locale)
             line_edit.setValidator(validator)
         return line_edit
     
-    def _create_dynamic_group(self, title, layout_attr, add_func):
+    def _create_dynamic_group(self, title, layout_attr_name, add_func):
         group = QGroupBox(title)
-        layout_attr_instance = QVBoxLayout(group)
-        setattr(self, layout_attr.objectName(), layout_attr_instance)
-        add_button = QPushButton(f"Добавить запись")
+        layout = QVBoxLayout(group)
+        setattr(self, layout_attr_name, layout)
+        add_button = QPushButton("Добавить запись")
         add_button.clicked.connect(add_func)
-        layout_attr_instance.addWidget(add_button)
+        layout.addWidget(add_button)
         return group
     
     def _create_dynamic_row(self, storage, layout, items, fields):
@@ -172,7 +173,7 @@ class Category6Tab(QWidget):
         row_layout.addWidget(remove_button)
         
         storage.append(row_data)
-        layout.addWidget(row_widget)
+        layout.insertWidget(layout.count() - 1, row_widget)
         remove_button.clicked.connect(lambda: self._remove_row(row_data, layout, storage))
 
     def _remove_row(self, row_data, layout, storage):

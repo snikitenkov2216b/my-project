@@ -68,6 +68,7 @@ class Category8Tab(QWidget):
         # Поле для ввода массы
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса, т")
+        # ИСПРАВЛЕНО
         mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
         mass_validator.setLocale(self.c_locale)
         mass_input.setValidator(mass_validator)
@@ -75,6 +76,7 @@ class Category8Tab(QWidget):
         # Поле для степени кальцинирования
         calc_degree_input = QLineEdit("1.0")
         calc_degree_input.setPlaceholderText("Степень кальц., доля")
+        # ИСПРАВЛЕНО
         calc_degree_validator = QDoubleValidator(0.0, 1.0, 4, self)
         calc_degree_validator.setLocale(self.c_locale)
         calc_degree_input.setValidator(calc_degree_validator)

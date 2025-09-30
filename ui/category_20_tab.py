@@ -117,7 +117,10 @@ class Category20Tab(QWidget):
         year_label = QLabel(f"Год {len(self.landfill_historical_rows) + 1}:")
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса отходов, Гг")
-        mass_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        mass_input.setValidator(validator)
         
         remove_button = QPushButton("Удалить")
         

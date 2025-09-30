@@ -95,7 +95,10 @@ class Category19Tab(QWidget):
         combo.addItems(items)
         
         consumption = QLineEdit(placeholderText="Расход, т")
-        consumption.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        consumption.setValidator(validator)
 
         remove_button = QPushButton("Удалить")
         
@@ -113,16 +116,19 @@ class Category19Tab(QWidget):
         row_layout = QHBoxLayout(row_widget)
 
         type_combo = QComboBox()
-        type_combo.addItems(self.data_service.get_road_work_types_19_1())
+        type_combo.addItems(self.data_service.get_road_types_table_19_1())
         
         stage_combo = QComboBox()
-        stage_combo.addItems(self.data_service.get_road_work_stages_19_1())
+        stage_combo.addItems(self.data_service.get_road_stages_table_19_1())
 
         category_combo = QComboBox()
-        category_combo.addItems(self.data_service.get_road_work_categories_19_1())
+        category_combo.addItems(list(self.data_service.table_19_1["Автомобильные дороги федерального значения"]["Содержание"].keys()))
 
         length_input = QLineEdit(placeholderText="Протяженность, км")
-        length_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        length_input.setValidator(validator)
         
         years_input = QSpinBox()
         years_input.setRange(1, 100)

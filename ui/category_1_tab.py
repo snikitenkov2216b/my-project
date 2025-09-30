@@ -38,7 +38,10 @@ class Category1Tab(QWidget):
         form_layout.addRow("Вид топлива:", self.fuel_combobox)
 
         self.fuel_consumption_input = QLineEdit()
-        self.fuel_consumption_input.setValidator(QDoubleValidator(0.0, 1e12, 6, self.c_locale))
+        # ИСПРАВЛЕНО: Раздельная инициализация валидатора и установка локали
+        validator_consumption = QDoubleValidator(0.0, 1e12, 6, self)
+        validator_consumption.setLocale(self.c_locale)
+        self.fuel_consumption_input.setValidator(validator_consumption)
         form_layout.addRow("Расход топлива (в натуральных единицах):", self.fuel_consumption_input)
         main_layout.addLayout(form_layout)
 
@@ -65,8 +68,10 @@ class Category1Tab(QWidget):
         main_layout.addWidget(ef_group)
 
         self.oxidation_factor_input = QLineEdit("1.0")
-        validator = QDoubleValidator(0.0, 1.0, 4, self.c_locale)
-        self.oxidation_factor_input.setValidator(validator)
+        # ИСПРАВЛЕНО: Раздельная инициализация валидатора и установка локали
+        validator_oxidation = QDoubleValidator(0.0, 1.0, 4, self)
+        validator_oxidation.setLocale(self.c_locale)
+        self.oxidation_factor_input.setValidator(validator_oxidation)
         ox_layout = QFormLayout()
         ox_layout.addRow("Коэффициент окисления (OF):", self.oxidation_factor_input)
         main_layout.addLayout(ox_layout)
@@ -83,7 +88,10 @@ class Category1Tab(QWidget):
         widget = QWidget()
         layout = QFormLayout(widget)
         self.carbon_content_input = QLineEdit()
-        self.carbon_content_input.setValidator(QDoubleValidator(0.0, 1.0, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1.0, 6, self)
+        validator.setLocale(self.c_locale)
+        self.carbon_content_input.setValidator(validator)
         layout.addRow("Содержание углерода в топливе (доля, т C/т):", self.carbon_content_input)
         return widget
         
@@ -92,7 +100,10 @@ class Category1Tab(QWidget):
         layout = QVBoxLayout(widget)
         form = QFormLayout()
         self.rho_co2_input = QLineEdit(str(self.data_service.get_density_data_table_1_2()['rho_CO2']))
-        self.rho_co2_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        self.rho_co2_input.setValidator(validator)
         form.addRow("Плотность CO₂, кг/м³:", self.rho_co2_input)
         layout.addLayout(form)
 
@@ -109,7 +120,10 @@ class Category1Tab(QWidget):
         layout = QVBoxLayout(widget)
         form = QFormLayout()
         self.fuel_density_input = QLineEdit()
-        self.fuel_density_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        self.fuel_density_input.setValidator(validator)
         form.addRow("Плотность топлива, кг/м³:", self.fuel_density_input)
         layout.addLayout(form)
         

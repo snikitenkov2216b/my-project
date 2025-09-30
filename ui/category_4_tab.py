@@ -61,6 +61,7 @@ class Category4Tab(QWidget):
         """Вспомогательная функция для создания поля ввода с валидатором."""
         line_edit = QLineEdit(default_value)
         if validator_params:
+            # ИСПРАВЛЕНО
             validator = QDoubleValidator(*validator_params, self)
             validator.setLocale(self.c_locale)
             line_edit.setValidator(validator)
@@ -96,7 +97,10 @@ class Category4Tab(QWidget):
 
         consumption_layout = QHBoxLayout()
         self.feedstock_consumption_input = QLineEdit()
-        self.feedstock_consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        self.feedstock_consumption_input.setValidator(validator)
         self.hydrogen_units_label = QLabel()
         consumption_layout.addWidget(self.feedstock_consumption_input)
         consumption_layout.addWidget(self.hydrogen_units_label)

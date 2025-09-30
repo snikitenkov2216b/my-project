@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QLineEdit,
     QPushButton, QLabel, QMessageBox, QStackedWidget, QHBoxLayout, QGroupBox
 )
-from PyQt6.QtGui import QDoubleValidator
+from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from data_models import DataService
@@ -63,7 +63,10 @@ class Category2Tab(QWidget):
         layout.addRow("Вид сжигаемого газа:", self.gas_type_combobox)
 
         self.consumption_input = QLineEdit()
-        self.consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator = QDoubleValidator(0.0, 1e9, 6, self)
+        validator.setLocale(self.c_locale)
+        self.consumption_input.setValidator(validator)
         layout.addRow("Расход газа:", self.consumption_input)
 
         self.unit_combobox = QComboBox()
@@ -83,15 +86,24 @@ class Category2Tab(QWidget):
         params_layout.addRow("Основа расчета:", self.calc_basis_combobox)
         
         self.comp_gas_consumption_input = QLineEdit()
-        self.comp_gas_consumption_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator_consump = QDoubleValidator(0.0, 1e9, 6, self)
+        validator_consump.setLocale(self.c_locale)
+        self.comp_gas_consumption_input.setValidator(validator_consump)
         params_layout.addRow("Общий расход газа (тыс. м³):", self.comp_gas_consumption_input)
 
         self.gas_density_input = QLineEdit()
-        self.gas_density_input.setValidator(QDoubleValidator(0.0, 1e9, 6, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator_density = QDoubleValidator(0.0, 1e9, 6, self)
+        validator_density.setLocale(self.c_locale)
+        self.gas_density_input.setValidator(validator_density)
         params_layout.addRow("Плотность газовой смеси (кг/м³, для расчета по массе):", self.gas_density_input)
 
         self.inefficiency_factor_input = QLineEdit("0.02")
-        self.inefficiency_factor_input.setValidator(QDoubleValidator(0.0, 1.0, 4, self.c_locale))
+        # ИСПРАВЛЕНО
+        validator_inefficiency = QDoubleValidator(0.0, 1.0, 4, self)
+        validator_inefficiency.setLocale(self.c_locale)
+        self.inefficiency_factor_input.setValidator(validator_inefficiency)
         params_layout.addRow("Коэффициент недожога (CF, доля):", self.inefficiency_factor_input)
         main_layout.addLayout(params_layout)
 
@@ -114,6 +126,17 @@ class Category2Tab(QWidget):
         row['carbon_atoms'] = QLineEdit(placeholderText="Атомов C")
         row['molar_mass'] = QLineEdit(placeholderText="Молярная масса (для расч. по массе)")
         
+        # ИСПРАВЛЕНО
+        fraction_validator = QDoubleValidator(0.0, 100.0, 6, self)
+        fraction_validator.setLocale(self.c_locale)
+        row['fraction'].setValidator(fraction_validator)
+
+        row['carbon_atoms'].setValidator(QIntValidator(0, 1000, self))
+
+        molar_mass_validator = QDoubleValidator(0.0, 1000.0, 6, self)
+        molar_mass_validator.setLocale(self.c_locale)
+        row['molar_mass'].setValidator(molar_mass_validator)
+
         remove_button = QPushButton("Удалить")
         
         layout.addWidget(row['name'])

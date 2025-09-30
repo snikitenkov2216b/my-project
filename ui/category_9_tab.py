@@ -65,19 +65,25 @@ class Category9Tab(QWidget):
         # Масса всего минерального сырья (например, глины)
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса сырья, т")
-        mass_validator = QDoubleValidator(0.0, 1e9, 6, self.c_locale)
+        # ИСПРАВЛЕНО
+        mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
+        mass_validator.setLocale(self.c_locale)
         mass_input.setValidator(mass_validator)
         
         # Доля карбоната в этом сырье
         fraction_input = QLineEdit()
         fraction_input.setPlaceholderText("Доля карбоната (0-1)")
-        fraction_validator = QDoubleValidator(0.0, 1.0, 4, self.c_locale)
+        # ИСПРАВЛЕНО
+        fraction_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        fraction_validator.setLocale(self.c_locale)
         fraction_input.setValidator(fraction_validator)
         
         # Степень кальцинирования
         calc_degree_input = QLineEdit("1.0")
         calc_degree_input.setPlaceholderText("Степень кальц., доля")
-        calc_degree_validator = QDoubleValidator(0.0, 1.0, 4, self.c_locale)
+        # ИСПРАВЛЕНО
+        calc_degree_validator = QDoubleValidator(0.0, 1.0, 4, self)
+        calc_degree_validator.setLocale(self.c_locale)
         calc_degree_input.setValidator(calc_degree_validator)
 
         remove_button = QPushButton("Удалить")

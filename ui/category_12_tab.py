@@ -135,7 +135,7 @@ class Category12Tab(QWidget):
         combo = QComboBox()
         combo.addItems(self.data_service.get_fuels_table_1_1())
         consumption = QLineEdit(placeholderText="Расход")
-        oxidation = QLineEdit(placeholderText="Коэф. окисления (0-1)", defaultValue="1.0")
+        oxidation = QLineEdit(placeholderText="Коэф. окисления (0-1)", text="1.0")
         remove_button = QPushButton("Удалить")
         layout.addWidget(combo); layout.addWidget(consumption); layout.addWidget(oxidation); layout.addWidget(remove_button)
         row_data = {'widget': row_widget, 'combo': combo, 'consumption': consumption, 'oxidation': oxidation}
@@ -168,7 +168,10 @@ class Category12Tab(QWidget):
         row_layout.addWidget(combo); row_data['combo'] = combo
         for key, placeholder, params in fields:
             editor = QLineEdit(placeholderText=placeholder)
-            editor.setValidator(QDoubleValidator(*params, self.c_locale))
+            # ИСПРАВЛЕНО
+            validator = QDoubleValidator(*params, self)
+            validator.setLocale(self.c_locale)
+            editor.setValidator(validator)
             row_layout.addWidget(editor); row_data[key] = editor
         remove_button = QPushButton("Удалить")
         row_layout.addWidget(remove_button)

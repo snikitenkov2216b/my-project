@@ -80,6 +80,7 @@ class Category16Tab(QWidget):
         widget = QWidget()
         layout = QFormLayout(widget)
         self.pfc_tech_combobox = QComboBox()
+        # ИСПРАВЛЕНО: Вызываем новую функцию для получения списка
         self.pfc_tech_combobox.addItems(self.data_service.get_aluminium_tech_types_16_1())
         layout.addRow("Технология электролизера:", self.pfc_tech_combobox)
         self.pfc_al_production_input = self._create_line_edit("", (0.0, 1e9, 6))

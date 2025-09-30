@@ -134,7 +134,7 @@ class Category14Tab(QWidget):
         return scroll_area
 
     def _get_all_materials(self):
-        materials = self.data_service.get_metallurgy_material_names_14_1()
+        materials = self.data_service.get_metallurgy_material_names_table_14_1()
         fuels = self.data_service.get_fuels_table_1_1()
         return sorted(list(set(materials + fuels)))
 
@@ -155,8 +155,10 @@ class Category14Tab(QWidget):
         row_layout.addWidget(combo); row_data['combo'] = combo
         for key, placeholder, params in fields:
             editor = QLineEdit(placeholderText=placeholder)
-            editor.setValidator(QDoubleValidator(*params, self))
-            editor.validator().setLocale(self.c_locale)
+            # ИСПРАВЛЕНО
+            validator = QDoubleValidator(*params, self)
+            validator.setLocale(self.c_locale)
+            editor.setValidator(validator)
             row_layout.addWidget(editor); row_data[key] = editor
         remove_button = QPushButton("Удалить")
         row_layout.addWidget(remove_button)

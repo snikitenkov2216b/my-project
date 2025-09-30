@@ -41,6 +41,7 @@ class Category10Tab(QWidget):
         # 2. Поле для ввода расхода сырья
         consumption_layout = QHBoxLayout()
         self.feedstock_consumption_input = QLineEdit()
+        # ИСПРАВЛЕНО
         consumption_validator = QDoubleValidator(0.0, 1e9, 6, self)
         consumption_validator.setLocale(self.c_locale)
         self.feedstock_consumption_input.setValidator(consumption_validator)
@@ -52,6 +53,7 @@ class Category10Tab(QWidget):
         
         # 3. Поле для ввода уловленного CO2
         self.recovered_co2_input = QLineEdit("0.0")
+        # ИСПРАВЛЕНО
         recovered_validator = QDoubleValidator(0.0, 1e9, 6, self)
         recovered_validator.setLocale(self.c_locale)
         self.recovered_co2_input.setValidator(recovered_validator)

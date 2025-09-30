@@ -39,6 +39,7 @@ class Category21Tab(QWidget):
         
         # Ввод массы отходов
         self.waste_mass_input = QLineEdit()
+        # ИСПРАВЛЕНО
         waste_validator = QDoubleValidator(0.0, 1e9, 6, self)
         waste_validator.setLocale(self.c_locale)
         self.waste_mass_input.setValidator(waste_validator)
@@ -46,6 +47,7 @@ class Category21Tab(QWidget):
         
         # Ввод рекуперированного метана
         self.recovered_ch4_input = QLineEdit("0.0")
+        # ИСПРАВЛЕНО
         recovered_validator = QDoubleValidator(0.0, 1e9, 6, self)
         recovered_validator.setLocale(self.c_locale)
         self.recovered_ch4_input.setValidator(recovered_validator)

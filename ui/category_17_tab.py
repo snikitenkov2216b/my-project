@@ -144,6 +144,7 @@ class Category17Tab(QWidget):
         
         for key, placeholder, params in fields:
             editor = QLineEdit(placeholderText=placeholder)
+            # ИСПРАВЛЕНО
             validator = QDoubleValidator(*params, self)
             validator.setLocale(self.c_locale)
             editor.setValidator(validator)

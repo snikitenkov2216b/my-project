@@ -437,20 +437,20 @@ TABLE_23_4 = {
 
 # Списки для выпадающих меню в UI, для удобства
 METALLURGY_RAW_MATERIALS = [
-    'Железорудные окатыши', 'Агломерат', 'Известняк', 'Доломит', 
-    'Кокс металлургический', 'Коксующийся уголь', 'Чугун, чугунный лом', 
+    'Железорудные окатыши', 'Агломерат', 'Известняк', 'Доломит',
+    'Кокс металлургический', 'Коксующийся уголь', 'Чугун, чугунный лом',
     'Сталь, стальной лом', 'Электроды для электродуговых печей',
     'Углеродсодержащие материалы для сталеплавильных печей'
 ]
 
 METALLURGY_PRODUCTS = [
-    'Железо прямого восстановления', 'Железо горячего брикетирования', 
-    'Чугун, чугунный лом', 'Сталь, стальной лом', 
+    'Железо прямого восстановления', 'Железо горячего брикетирования',
+    'Чугун, чугунный лом', 'Сталь, стальной лом',
     'Газ горючий искусственный доменный'
 ]
 
 FERROALLOY_RAW_MATERIALS = [
-    'Кокс металлургический', 'Антрацит', 'Каменный уголь', 
+    'Кокс металлургический', 'Антрацит', 'Каменный уголь',
     'Электроды для электродуговых печей'
 ]
 
@@ -557,7 +557,7 @@ class DataService:
                 return item
         return None
         
-    def get_petrochemical_substance_names_table_12_1(self):
+    def get_petrochemical_substance_names_12_1(self):
         return [item['substance'] for item in self.table_12_1]
 
     def get_petrochemical_substance_data_table_12_1(self, substance_name):
@@ -575,11 +575,18 @@ class DataService:
                 return item
         return None
         
+    def get_aluminium_tech_types_16_1(self):
+        return [item['technology'] for item in self.table_16_1]
+        
     def get_aluminium_tech_data_table_16_1(self, technology):
         for item in self.table_16_1:
             if item['technology'] == technology:
                 return item
         return None
+
+    # ИСПРАВЛЕНО: Добавлена новая функция
+    def get_transport_fuel_names_18_1(self):
+        return [item['fuel'] for item in self.table_18_1]
 
     def get_transport_fuel_data_table_18_1(self, fuel_name):
         for item in self.table_18_1:
@@ -609,6 +616,9 @@ class DataService:
             if item['type'] == treatment_type:
                 return item
         return None
+    
+    def get_waste_component_types_20_2(self):
+        return list(self.table_20_2.keys())
 
     def get_metallurgy_raw_materials(self):
         return METALLURGY_RAW_MATERIALS
