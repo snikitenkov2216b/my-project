@@ -27,7 +27,6 @@ class Category0Tab(QWidget):
     def __init__(self, calculator: Category0Calculator, parent=None):
         super().__init__(parent)
         self.calculator = calculator
-        # Локаль для корректного ввода дробных чисел (точка или запятая)
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._init_ui()
 
@@ -35,7 +34,6 @@ class Category0Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Группа для ввода данных ---
         input_group = QGroupBox("Расчет фактического расхода ресурса (Формула 1)")
         form_layout = QFormLayout(input_group)
 
@@ -73,7 +71,6 @@ class Category0Tab(QWidget):
 
         main_layout.addWidget(input_group)
 
-        # --- Кнопка и результат ---
         self.calculate_button = QPushButton("Рассчитать расход")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(
@@ -85,25 +82,20 @@ class Category0Tab(QWidget):
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
     def _create_line_edit(self, placeholder=""):
-        """Вспомогательная функция для создания поля ввода с валидатором."""
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder)
-        validator = QDoubleValidator(
-            -1e12, 1e12, 6, self
-        )  # Разрешаем отрицательные для запасов
+        validator = QDoubleValidator(-1e12, 1e12, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
         return line_edit
 
     def _get_float(self, line_edit, field_name):
-        """Вспомогательная функция для получения числового значения из поля ввода."""
         text = line_edit.text().replace(",", ".")
         if not text:
             raise ValueError(f"Поле '{field_name}' не может быть пустым.")
         return float(text)
 
     def _perform_calculation(self):
-        """Выполняет расчет на основе введенных данных."""
         try:
             postuplenie = self._get_float(self.input_postuplenie, "Поступление")
             otgruzka = self._get_float(self.input_otgruzka, "Отгрузка")

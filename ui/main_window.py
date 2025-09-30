@@ -38,7 +38,6 @@ from ui.category_24_tab import Category24Tab
 class MainWindow(QMainWindow):
     """
     Класс главного окна приложения.
-    Отвечает за инициализацию и отображение всех компонентов интерфейса.
     """
     def __init__(self, data_service: DataService):
         super().__init__()
