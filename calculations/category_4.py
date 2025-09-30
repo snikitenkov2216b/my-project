@@ -4,6 +4,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+from config import CARBON_TO_CO2_FACTOR # ИМПОРТ
 
 class Category4Calculator:
     """
@@ -19,7 +20,7 @@ class Category4Calculator:
         :param data_service: Экземпляр сервиса для доступа к таблицам с коэффициентами.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = 3.664
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR
 
     def calculate_coke_burnoff_continuous(self, Q_y: float, measurements: list) -> float:
         """

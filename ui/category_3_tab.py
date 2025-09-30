@@ -50,11 +50,11 @@ class Category3Tab(QWidget):
         volume_layout = QHBoxLayout()
         self.volume_input = QLineEdit()
         
-        # ИСПРАВЛЕНО
         volume_validator = QDoubleValidator(0.0, 1e12, 6, self)
         volume_validator.setLocale(self.c_locale)
         self.volume_input.setValidator(volume_validator)
         self.volume_input.setPlaceholderText("Введите числовое значение")
+        self.volume_input.setToolTip("Общий годовой объем стравливания или отведения углеводородной смеси.")
         
         volume_layout.addWidget(self.volume_input)
         volume_layout.addWidget(QLabel("(тыс. м³)"))

@@ -80,14 +80,16 @@ class Category16Tab(QWidget):
         widget = QWidget()
         layout = QFormLayout(widget)
         self.pfc_tech_combobox = QComboBox()
-        # ИСПРАВЛЕНО: Вызываем новую функцию для получения списка
         self.pfc_tech_combobox.addItems(self.data_service.get_aluminium_tech_types_16_1())
         layout.addRow("Технология электролизера:", self.pfc_tech_combobox)
         self.pfc_al_production_input = self._create_line_edit("", (0.0, 1e9, 6))
+        self.pfc_al_production_input.setToolTip("Годовой объем производства первичного алюминия.")
         layout.addRow("Производство алюминия (т/год):", self.pfc_al_production_input)
         self.pfc_aef_input = self._create_line_edit("", (0.0, 1e9, 6))
+        self.pfc_aef_input.setToolTip("Среднее количество анодных эффектов на одну ванну в сутки.")
         layout.addRow("Частота анодных эффектов (шт./ванно-сутки):", self.pfc_aef_input)
         self.pfc_aed_input = self._create_line_edit("", (0.0, 1e9, 6))
+        self.pfc_aed_input.setToolTip("Средняя продолжительность одного анодного эффекта в минутах.")
         layout.addRow("Продолжительность анодных эффектов (мин/шт.):", self.pfc_aed_input)
         return widget
 
@@ -106,11 +108,9 @@ class Category16Tab(QWidget):
         base_layout.addRow("Содержание золы (Z) в массе (%):", self.soderberg_z_input)
         layout.addWidget(base_group)
 
-        # Детализированные потери
         losses_group = QGroupBox("Детализированный расчет потерь углерода (опционально)")
         losses_layout = QVBoxLayout(losses_group)
 
-        # Потери со смолой
         tar_group = QGroupBox("Потери со смолой (ф. 16.9-16.11)")
         tar_layout = QFormLayout(tar_group)
         self.sod_tar_p_sm_r = self._create_line_edit("0.0", (0.0, 1e9, 6))
@@ -125,7 +125,6 @@ class Category16Tab(QWidget):
         tar_layout.addRow(self.sod_tar_wet_scrubber)
         losses_layout.addWidget(tar_group)
 
-        # Потери с пылью
         dust_group = QGroupBox("Потери с пылью (ф. 16.12-16.14)")
         dust_layout = QFormLayout(dust_group)
         self.sod_dust_p_pyl_r = self._create_line_edit("0.0", (0.0, 1e9, 6))
@@ -138,7 +137,6 @@ class Category16Tab(QWidget):
         dust_layout.addRow(self.sod_dust_wet_scrubber)
         losses_layout.addWidget(dust_group)
 
-        # Потери с пеной
         foam_group = QGroupBox("Потери с пеной (ф. 16.15)")
         foam_layout = QFormLayout(foam_group)
         self.sod_foam_p_pena_vyh = self._create_line_edit("0.0", (0.0, 1e9, 6))
@@ -147,7 +145,6 @@ class Category16Tab(QWidget):
         foam_layout.addRow("Содержание C в пене W_с_пена (%):", self.sod_foam_w_c_pena)
         losses_layout.addWidget(foam_group)
 
-        # Мокрая газоочистка
         scrub_group = QGroupBox("Выбросы от мокрой газоочистки (ф. 16.16)")
         scrub_layout = QFormLayout(scrub_group)
         self.sod_scrub_p_so2 = self._create_line_edit("0.0", (0.0, 1e9, 6))

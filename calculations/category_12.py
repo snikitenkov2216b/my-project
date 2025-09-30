@@ -4,6 +4,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+from config import CARBON_TO_CO2_FACTOR # ИМПОРТ
 # Импортируем калькуляторы для других категорий для реализации формулы 12.2
 from calculations.category_1 import Category1Calculator
 from calculations.category_2 import Category2Calculator
@@ -21,7 +22,7 @@ class Category12Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = 3.664
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR # ИСПОЛЬЗОВАНИЕ
         # Инициализируем калькуляторы других категорий для метода 12.2
         self.cat1_calc = Category1Calculator(data_service)
         self.cat2_calc = Category2Calculator(data_service)

@@ -31,36 +31,31 @@ class Category21Tab(QWidget):
         
         form_layout = QFormLayout()
 
-        # Выбор типа переработки
         self.treatment_type_combobox = QComboBox()
         treatment_types = self.data_service.get_biological_treatment_types_table_21_1()
         self.treatment_type_combobox.addItems(treatment_types)
         form_layout.addRow("Тип переработки:", self.treatment_type_combobox)
         
-        # Ввод массы отходов
         self.waste_mass_input = QLineEdit()
-        # ИСПРАВЛЕНО
         waste_validator = QDoubleValidator(0.0, 1e9, 6, self)
         waste_validator.setLocale(self.c_locale)
         self.waste_mass_input.setValidator(waste_validator)
+        self.waste_mass_input.setToolTip("Общая масса органических отходов, поступивших на переработку за год.")
         form_layout.addRow("Масса отходов (тонн, сырой вес):", self.waste_mass_input)
         
-        # Ввод рекуперированного метана
         self.recovered_ch4_input = QLineEdit("0.0")
-        # ИСПРАВЛЕНО
         recovered_validator = QDoubleValidator(0.0, 1e9, 6, self)
         recovered_validator.setLocale(self.c_locale)
         self.recovered_ch4_input.setValidator(recovered_validator)
+        self.recovered_ch4_input.setToolTip("Количество метана, собранного и утилизированного (например, сожженного) за год.")
         form_layout.addRow("Рекуперированный CH4 (тонн, для CH4):", self.recovered_ch4_input)
 
         main_layout.addLayout(form_layout)
 
-        # Кнопка расчета
         self.calculate_button = QPushButton("Рассчитать выбросы")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
 
-        # Метка для вывода результата
         self.result_label = QLabel("Результат:...")
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -79,14 +74,12 @@ class Category21Tab(QWidget):
             waste_mass = self._get_float(self.waste_mass_input, "Масса отходов")
             recovered_ch4 = self._get_float(self.recovered_ch4_input, "Рекуперированный CH4")
 
-            # Расчет выбросов CH4
             ch4_emissions = self.calculator.calculate_ch4_emissions(
                 waste_mass=waste_mass,
                 treatment_type=treatment_type,
                 recovered_ch4=recovered_ch4
             )
 
-            # Расчет выбросов N2O
             n2o_emissions = self.calculator.calculate_n2o_emissions(
                 waste_mass=waste_mass,
                 treatment_type=treatment_type

@@ -76,6 +76,7 @@ class Category11Tab(QWidget):
         layout.addRow("Производственный процесс:", self.process_combobox)
         
         self.production_mass_input = self._create_line_edit((0.0, 1e9, 6))
+        self.production_mass_input.setToolTip("Годовой объем производства продукции, тонн.")
         layout.addRow("Масса произведенной продукции (т):", self.production_mass_input)
         
         return widget
@@ -85,9 +86,11 @@ class Category11Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.gas_flow_input = self._create_line_edit((0.0, 1e12, 6))
+        self.gas_flow_input.setToolTip("Общий годовой расход отходящих газов с установки, м³/год.")
         layout.addRow("Расход отходящих газов (м³/год):", self.gas_flow_input)
         
         self.n2o_concentration_input = self._create_line_edit((0.0, 1e9, 6))
+        self.n2o_concentration_input.setToolTip("Среднегодовая концентрация N2O в отходящих газах, мг/м³.")
         layout.addRow("Средняя концентрация N2O (мг/м³):", self.n2o_concentration_input)
 
         return widget
@@ -97,12 +100,15 @@ class Category11Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.avg_gas_flow_input = self._create_line_edit((0.0, 1e9, 6))
+        self.avg_gas_flow_input.setToolTip("Средний расход отходящих газов за период измерений, м³/час.")
         layout.addRow("Средний расход отходящих газов (м³/час):", self.avg_gas_flow_input)
 
         self.avg_n2o_concentration_input = self._create_line_edit((0.0, 1e9, 6))
+        self.avg_n2o_concentration_input.setToolTip("Средняя концентрация N2O за период измерений, мг/м³.")
         layout.addRow("Средняя концентрация N2O (мг/м³):", self.avg_n2o_concentration_input)
         
         self.avg_production_input = self._create_line_edit((0.0, 1e9, 6))
+        self.avg_production_input.setToolTip("Средний объем производства продукции за период измерений, т/час.")
         layout.addRow("Среднее производство продукции (т/час):", self.avg_production_input)
 
         return widget

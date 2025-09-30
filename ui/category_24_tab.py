@@ -37,18 +37,23 @@ class Category24Tab(QWidget):
         nitrogen_layout.addRow("Численность населения (P, чел):", self.population_input)
 
         self.protein_input = self._create_line_edit((0.0, 1000.0, 4), "30.0")
+        self.protein_input.setToolTip("Среднегодовое потребление белка на душу населения. Стандартное значение: 30 кг/чел/год.")
         nitrogen_layout.addRow("Потребление протеина (кг/чел/год):", self.protein_input)
 
         self.fnpr_input = self._create_line_edit((0.0, 1.0, 4), "0.16")
+        self.fnpr_input.setToolTip("Доля азота в белке. Стандартное значение: 0.16 кг N/кг белка.")
         nitrogen_layout.addRow("Доля азота в протеине (F_NPR):", self.fnpr_input)
 
         self.fnon_con_input = self._create_line_edit((0.0, 10.0, 4), "1.1")
+        self.fnon_con_input.setToolTip("Коэффициент, учитывающий белок в продуктах, не предназначенных для потребления человеком. Стандартное значение: 1.1.")
         nitrogen_layout.addRow("Коэф. для непотребленного протеина (F_NON-CON):", self.fnon_con_input)
 
         self.find_com_input = self._create_line_edit((0.0, 10.0, 4), "1.25")
+        self.find_com_input.setToolTip("Коэффициент, учитывающий промышленный и коммерческий сброс белка в канализацию. Стандартное значение: 1.25.")
         nitrogen_layout.addRow("Коэф. для пром. и комм. протеина (F_IND-COM):", self.find_com_input)
 
         self.sludge_nitrogen_input = self._create_line_edit((0.0, 1e12, 6), "0.0")
+        self.sludge_nitrogen_input.setToolTip("Общее количество азота, удаленное с осадком сточных вод за год.")
         nitrogen_layout.addRow("Азот, удаленный с отстоем (N_ОТСТОЙ, кг N/год):", self.sludge_nitrogen_input)
 
         main_layout.addWidget(nitrogen_group)
@@ -58,6 +63,7 @@ class Category24Tab(QWidget):
         emission_layout = QFormLayout(emission_group)
 
         self.emission_factor_input = self._create_line_edit((0.0, 1.0, 6), "0.005")
+        self.emission_factor_input.setToolTip("Коэффициент выбросов для N2O из сточных вод. Стандартное значение: 0.005 кг N2O-N/кг N.")
         emission_layout.addRow("Коэффициент выбросов (EF_сток, кг N2O-N/кг N):", self.emission_factor_input)
         
         main_layout.addWidget(emission_group)

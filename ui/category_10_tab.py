@@ -31,32 +31,29 @@ class Category10Tab(QWidget):
         form_layout = QFormLayout()
         form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
 
-        # 1. Выбор сырья (топлива)
         self.feedstock_combobox = QComboBox()
         feedstock_list = self.data_service.get_fuels_table_1_1()
         self.feedstock_combobox.addItems(feedstock_list)
         self.feedstock_combobox.currentIndexChanged.connect(self._update_units)
         form_layout.addRow("Вид углеродсодержащего сырья:", self.feedstock_combobox)
         
-        # 2. Поле для ввода расхода сырья
         consumption_layout = QHBoxLayout()
         self.feedstock_consumption_input = QLineEdit()
-        # ИСПРАВЛЕНО
         consumption_validator = QDoubleValidator(0.0, 1e9, 6, self)
         consumption_validator.setLocale(self.c_locale)
         self.feedstock_consumption_input.setValidator(consumption_validator)
+        self.feedstock_consumption_input.setToolTip("Годовой расход сырья для производства аммиака.")
         
         self.units_label = QLabel()
         consumption_layout.addWidget(self.feedstock_consumption_input)
         consumption_layout.addWidget(self.units_label)
         form_layout.addRow("Расход сырья:", consumption_layout)
         
-        # 3. Поле для ввода уловленного CO2
         self.recovered_co2_input = QLineEdit("0.0")
-        # ИСПРАВЛЕНО
         recovered_validator = QDoubleValidator(0.0, 1e9, 6, self)
         recovered_validator.setLocale(self.c_locale)
         self.recovered_co2_input.setValidator(recovered_validator)
+        self.recovered_co2_input.setToolTip("Масса CO2, уловленного и направленного на дальнейшее использование (например, производство карбамида).")
         form_layout.addRow("Масса уловленного CO2 (т):", self.recovered_co2_input)
 
         main_layout.addLayout(form_layout)
@@ -69,7 +66,6 @@ class Category10Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
         
-        # Инициализируем единицы измерения для первого элемента в списке
         self._update_units()
 
     def _update_units(self):

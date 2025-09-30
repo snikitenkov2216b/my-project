@@ -75,14 +75,23 @@ class Category22Tab(QWidget):
         widget = QWidget()
         layout = QFormLayout(widget)
         self.solid_waste_mass = self._create_line_edit("", (0.0, 1e9, 6))
+        self.solid_waste_mass.setToolTip("Общая масса сожженных отходов за год, в тоннах.")
         layout.addRow("Масса сожженных отходов (т/год):", self.solid_waste_mass)
+        
         self.solid_dm_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        self.solid_dm_fraction.setToolTip("Доля сухого вещества в отходах (dry matter fraction).")
         layout.addRow("Доля сухого вещества (dm):", self.solid_dm_fraction)
+        
         self.solid_cf_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        self.solid_cf_fraction.setToolTip("Доля углерода в сухом веществе отходов (carbon fraction).")
         layout.addRow("Доля углерода в сухом веществе (CF):", self.solid_cf_fraction)
+        
         self.solid_fcf_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        self.solid_fcf_fraction.setToolTip("Доля ископаемого (небиогенного) углерода в общем углероде (fossil carbon fraction).")
         layout.addRow("Доля ископаемого углерода (FCF):", self.solid_fcf_fraction)
+        
         self.solid_of_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        self.solid_of_fraction.setToolTip("Коэффициент полноты сгорания (oxidation factor).")
         layout.addRow("Коэффициент окисления (OF):", self.solid_of_fraction)
         return widget
 
@@ -94,8 +103,11 @@ class Category22Tab(QWidget):
 
         form = QFormLayout()
         self.multi_total_mass = self._create_line_edit("", (0.0, 1e9, 6))
+        self.multi_total_mass.setToolTip("Общая масса сожженных многокомпонентных отходов за год, в тоннах.")
         form.addRow("Общая масса сожженных отходов (т/год):", self.multi_total_mass)
+        
         self.multi_of_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        self.multi_of_fraction.setToolTip("Коэффициент полноты сгорания (oxidation factor).")
         form.addRow("Коэффициент окисления (OF):", self.multi_of_fraction)
         layout.addLayout(form)
 
@@ -114,7 +126,11 @@ class Category22Tab(QWidget):
         row_layout = QHBoxLayout(row_widget)
         combo = QComboBox()
         combo.addItems(self.data_service.get_waste_component_types_20_2())
+        
         fraction_input = self._create_line_edit("", (0.0, 1.0, 4), "Доля компонента (0-1)")
+        ### НОВОЕ: Добавляем подсказку ###
+        fraction_input.setToolTip("Массовая доля данного компонента в общей массе отходов.\nСумма долей всех компонентов должна быть равна 1.")
+
         remove_button = QPushButton("Удалить")
         row_layout.addWidget(combo)
         row_layout.addWidget(fraction_input)
@@ -173,7 +189,18 @@ class Category22Tab(QWidget):
                 total_mass = self._get_float(self.multi_total_mass, "Общая масса отходов")
                 of = self._get_float(self.multi_of_fraction, "Коэффициент окисления")
                 if not self.multicomponent_rows: raise ValueError("Добавьте хотя бы один компонент отходов.")
-                composition = [{'type': r['combo'].currentText(), 'fraction': self._get_float(r['fraction'], 'Доля компонента')} for r in self.multicomponent_rows]
+                
+                composition = []
+                total_fraction = 0
+                for r in self.multicomponent_rows:
+                    fraction = self._get_float(r['fraction'], 'Доля компонента')
+                    total_fraction += fraction
+                    composition.append({'type': r['combo'].currentText(), 'fraction': fraction})
+                
+                ### ИЗМЕНЕНО: Добавлена валидация суммы долей ###
+                if not (0.99 <= total_fraction <= 1.01):
+                    raise ValueError(f"Сумма долей компонентов ({total_fraction:.2f}) должна быть равна 1 (100%).")
+
                 co2_emissions = self.calculator.calculate_co2_emissions_multicomponent(total_mass, composition, of)
                 result_text = f"Результат: {co2_emissions:.4f} тонн CO2"
 

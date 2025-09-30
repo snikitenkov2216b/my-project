@@ -7,6 +7,8 @@ from PyQt6.QtWidgets import QMainWindow, QTabWidget, QApplication
 from PyQt6.QtGui import QIcon
 
 from data_models import DataService
+# ИМПОРТ НОВОЙ ВКЛАДКИ
+from ui.category_0_tab import Category0Tab 
 from ui.category_1_tab import Category1Tab
 from ui.category_2_tab import Category2Tab
 from ui.category_3_tab import Category3Tab
@@ -51,6 +53,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tabs)
 
         # --- Добавляем все вкладки для категорий выбросов ---
+        # ИСПРАВЛЕНО: Добавлена нулевая категория
+        self.tabs.addTab(Category0Tab(), "Кат. 0: Расход ресурсов")
         self.tabs.addTab(Category1Tab(self.data_service), "Кат. 1: Стац. сжигание")
         self.tabs.addTab(Category2Tab(self.data_service), "Кат. 2: Факелы")
         self.tabs.addTab(Category3Tab(self.data_service), "Кат. 3: Фугитивные")

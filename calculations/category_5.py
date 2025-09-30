@@ -3,6 +3,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+from config import CARBON_TO_CO2_FACTOR # ИМПОРТ
 
 class Category5Calculator:
     """
@@ -16,7 +17,8 @@ class Category5Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = 3.664
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR # ИСПОЛЬЗОВАНИЕ
+# ... остальной код файла без изменений ...
 
     def _get_carbon_content(self, material_name: str) -> float:
         """

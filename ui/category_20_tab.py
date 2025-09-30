@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
+import math
 
 from data_models import DataService
 from calculations.category_20 import Category20Calculator
@@ -73,19 +74,33 @@ class Category20Tab(QWidget):
         params_layout = QFormLayout(params_group)
 
         self.landfill_doc_input = self._create_line_edit((0.0, 1.0, 6), "0.15")
+        self.landfill_doc_input.setToolTip("Доля способного к разложению органического углерода. Стандартное значение для ТКО - 0.15.")
         params_layout.addRow("Доля разлагаемого углерода (DOC, доля):", self.landfill_doc_input)
+
         self.landfill_docf_input = self._create_line_edit((0.0, 1.0, 6), "0.5")
+        self.landfill_docf_input.setToolTip("Доля DOC, который действительно разлагается. Стандартное значение - 0.5.")
         params_layout.addRow("Доля DOC, способного к разложению (DOCf, доля):", self.landfill_docf_input)
+
         self.landfill_mcf_input = self._create_line_edit((0.0, 1.0, 6), "1.0")
+        self.landfill_mcf_input.setToolTip("Поправочный коэффициент для метана (зависит от типа полигона). 1.0 для анаэробных управляемых полигонов.")
         params_layout.addRow("Поправочный коэффициент для метана (MCF, доля):", self.landfill_mcf_input)
+
         self.landfill_f_input = self._create_line_edit((0.0, 1.0, 6), "0.5")
+        self.landfill_f_input.setToolTip("Доля метана в образующемся свалочном газе. Стандартное значение - 0.5.")
         params_layout.addRow("Доля CH4 в свалочном газе (F, доля):", self.landfill_f_input)
+
         self.landfill_k_input = self._create_line_edit((0.0, 1.0, 6), "0.05")
+        self.landfill_k_input.setToolTip("Постоянная реакции разложения (зависит от типа отходов и климата).")
         params_layout.addRow("Постоянная реакции разложения (k, 1/год):", self.landfill_k_input)
+
         self.landfill_r_input = self._create_line_edit((0.0, 1e9, 6), "0.0")
+        self.landfill_r_input.setToolTip("Количество метана, собранного и утилизированного на полигоне за год, в гигаграммах (тыс. тонн).")
         params_layout.addRow("Рекуперированный CH4 (R, Гг/год):", self.landfill_r_input)
+
         self.landfill_ox_input = self._create_line_edit((0.0, 1.0, 6), "0.0")
+        self.landfill_ox_input.setToolTip("Коэффициент окисления метана в верхнем слое полигона. 0.1 для управляемых полигонов с укрытием, иначе 0.")
         params_layout.addRow("Коэффициент окисления (OX, доля):", self.landfill_ox_input)
+        
         layout.addWidget(params_group)
 
         history_group = QGroupBox("Данные о захоронении отходов (в хронологическом порядке)")
@@ -106,6 +121,7 @@ class Category20Tab(QWidget):
         layout.addRow("Тип переработки:", self.bio_treatment_type_combobox)
 
         self.bio_waste_mass_input = self._create_line_edit((0.0, 1e9, 6))
+        self.bio_waste_mass_input.setToolTip("Общая масса органических отходов, поступивших на переработку за год.")
         layout.addRow("Масса отходов (тонн, сырой вес):", self.bio_waste_mass_input)
 
         return widget
@@ -117,7 +133,6 @@ class Category20Tab(QWidget):
         year_label = QLabel(f"Год {len(self.landfill_historical_rows) + 1}:")
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса отходов, Гг")
-        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         mass_input.setValidator(validator)

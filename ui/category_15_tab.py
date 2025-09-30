@@ -116,7 +116,6 @@ class Category15Tab(QWidget):
         
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder_text)
-        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
@@ -129,7 +128,6 @@ class Category15Tab(QWidget):
         
         row_data = {'widget': row_widget, 'combo': combo, 'input': line_edit}
         storage_list.append(row_data)
-        # Вставляем новую строку перед кнопкой "Добавить"
         target_layout.insertWidget(target_layout.count() - 1, row_widget)
         
         remove_button.clicked.connect(lambda: self._remove_row(row_data, target_layout, storage_list))
@@ -174,7 +172,6 @@ class Category15Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
-            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

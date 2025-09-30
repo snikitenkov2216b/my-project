@@ -63,10 +63,10 @@ class Category2Tab(QWidget):
         layout.addRow("Вид сжигаемого газа:", self.gas_type_combobox)
 
         self.consumption_input = QLineEdit()
-        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         self.consumption_input.setValidator(validator)
+        self.consumption_input.setToolTip("Годовой объем или масса сжигаемого в факеле газа.")
         layout.addRow("Расход газа:", self.consumption_input)
 
         self.unit_combobox = QComboBox()
@@ -86,24 +86,24 @@ class Category2Tab(QWidget):
         params_layout.addRow("Основа расчета:", self.calc_basis_combobox)
         
         self.comp_gas_consumption_input = QLineEdit()
-        # ИСПРАВЛЕНО
         validator_consump = QDoubleValidator(0.0, 1e9, 6, self)
         validator_consump.setLocale(self.c_locale)
         self.comp_gas_consumption_input.setValidator(validator_consump)
+        self.comp_gas_consumption_input.setToolTip("Общий годовой объем сжигаемого газа в тыс. м³.")
         params_layout.addRow("Общий расход газа (тыс. м³):", self.comp_gas_consumption_input)
 
         self.gas_density_input = QLineEdit()
-        # ИСПРАВЛЕНО
         validator_density = QDoubleValidator(0.0, 1e9, 6, self)
         validator_density.setLocale(self.c_locale)
         self.gas_density_input.setValidator(validator_density)
+        self.gas_density_input.setToolTip("Требуется только для расчета по массе.")
         params_layout.addRow("Плотность газовой смеси (кг/м³, для расчета по массе):", self.gas_density_input)
 
         self.inefficiency_factor_input = QLineEdit("0.02")
-        # ИСПРАВЛЕНО
         validator_inefficiency = QDoubleValidator(0.0, 1.0, 4, self)
         validator_inefficiency.setLocale(self.c_locale)
         self.inefficiency_factor_input.setValidator(validator_inefficiency)
+        self.inefficiency_factor_input.setToolTip("Коэффициент недожога. Стандартные значения: 0.02 для месторождений, 0.005 для предприятий.")
         params_layout.addRow("Коэффициент недожога (CF, доля):", self.inefficiency_factor_input)
         main_layout.addLayout(params_layout)
 
@@ -126,10 +126,10 @@ class Category2Tab(QWidget):
         row['carbon_atoms'] = QLineEdit(placeholderText="Атомов C")
         row['molar_mass'] = QLineEdit(placeholderText="Молярная масса (для расч. по массе)")
         
-        # ИСПРАВЛЕНО
         fraction_validator = QDoubleValidator(0.0, 100.0, 6, self)
         fraction_validator.setLocale(self.c_locale)
         row['fraction'].setValidator(fraction_validator)
+        row['fraction'].setToolTip("Объемная или массовая доля компонента в смеси, в процентах.")
 
         row['carbon_atoms'].setValidator(QIntValidator(0, 1000, self))
 
@@ -182,10 +182,12 @@ class Category2Tab(QWidget):
                 
                 components = []
                 ch4_fraction = 0.0
+                total_fraction = 0
                 for i, row in enumerate(self.gas_composition_rows):
                     name = row['name'].text()
                     if not name: raise ValueError(f"Введите название компонента {i+1}.")
                     fraction = self._get_float(row['fraction'], f"Доля компонента {i+1}")
+                    total_fraction += fraction
                     
                     comp_data = {
                         'name': name,
@@ -201,11 +203,13 @@ class Category2Tab(QWidget):
                         ch4_fraction = fraction
                     
                     components.append(comp_data)
+                
+                if not (99.9 <= total_fraction <= 100.1):
+                    raise ValueError(f"Сумма долей компонентов ({total_fraction}%) должна быть равна 100%.")
 
                 ef_co2 = self.calculator.calculate_ef_co2(components, inefficiency_factor, gas_density, is_by_mass)
                 ef_ch4 = self.calculator.calculate_ef_ch4(ch4_fraction, inefficiency_factor, is_by_mass)
 
-                # Итоговые выбросы E = FC * EF
                 co2_emissions = consumption * ef_co2
                 ch4_emissions = consumption * ef_ch4
                 

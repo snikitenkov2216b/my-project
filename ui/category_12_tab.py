@@ -124,7 +124,6 @@ class Category12Tab(QWidget):
 
         return scroll_area
 
-    # --- Методы для добавления/удаления строк ---
     def _add_balance_raw_row(self): self._create_dynamic_row(self.balance_raw_materials, self.balance_raw_layout, self.data_service.get_petrochemical_substance_names_12_1(), [('consumption', 'Расход, т', (0.0, 1e9, 6))])
     def _add_balance_primary_row(self): self._create_dynamic_row(self.balance_primary_products, self.balance_primary_layout, self.data_service.get_petrochemical_substance_names_12_1(), [('production', 'Производство, т', (0.0, 1e9, 6))])
     def _add_balance_by_prod_row(self): self._create_dynamic_row(self.balance_by_products, self.balance_by_prod_layout, self.data_service.get_petrochemical_substance_names_12_1(), [('production', 'Производство, т', (0.0, 1e9, 6))])
@@ -136,6 +135,7 @@ class Category12Tab(QWidget):
         combo.addItems(self.data_service.get_fuels_table_1_1())
         consumption = QLineEdit(placeholderText="Расход")
         oxidation = QLineEdit(placeholderText="Коэф. окисления (0-1)", text="1.0")
+        oxidation.setToolTip("Коэффициент полноты сгорания топлива (доля от 0 до 1).")
         remove_button = QPushButton("Удалить")
         layout.addWidget(combo); layout.addWidget(consumption); layout.addWidget(oxidation); layout.addWidget(remove_button)
         row_data = {'widget': row_widget, 'combo': combo, 'consumption': consumption, 'oxidation': oxidation}
@@ -168,7 +168,6 @@ class Category12Tab(QWidget):
         row_layout.addWidget(combo); row_data['combo'] = combo
         for key, placeholder, params in fields:
             editor = QLineEdit(placeholderText=placeholder)
-            # ИСПРАВЛЕНО
             validator = QDoubleValidator(*params, self)
             validator.setLocale(self.c_locale)
             editor.setValidator(validator)

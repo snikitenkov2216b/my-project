@@ -57,34 +57,30 @@ class Category9Tab(QWidget):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         
-        # Выбор карбоната, содержащегося в сырье
         carbonate_combo = QComboBox()
         carbonate_names = self.data_service.get_carbonate_formulas_table_6_1()
         carbonate_combo.addItems(carbonate_names)
         
-        # Масса всего минерального сырья (например, глины)
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса сырья, т")
-        # ИСПРАВЛЕНО
         mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
         mass_validator.setLocale(self.c_locale)
         mass_input.setValidator(mass_validator)
+        mass_input.setToolTip("Общая масса минерального сырья (например, глины), содержащего данный карбонат.")
         
-        # Доля карбоната в этом сырье
         fraction_input = QLineEdit()
         fraction_input.setPlaceholderText("Доля карбоната (0-1)")
-        # ИСПРАВЛЕНО
         fraction_validator = QDoubleValidator(0.0, 1.0, 4, self)
         fraction_validator.setLocale(self.c_locale)
         fraction_input.setValidator(fraction_validator)
+        fraction_input.setToolTip("Массовая доля карбоната в данном виде сырья.")
         
-        # Степень кальцинирования
         calc_degree_input = QLineEdit("1.0")
         calc_degree_input.setPlaceholderText("Степень кальц., доля")
-        # ИСПРАВЛЕНО
         calc_degree_validator = QDoubleValidator(0.0, 1.0, 4, self)
         calc_degree_validator.setLocale(self.c_locale)
         calc_degree_input.setValidator(calc_degree_validator)
+        calc_degree_input.setToolTip("Степень кальцинирования (доля от 0 до 1). По умолчанию 1.0 (100%).")
 
         remove_button = QPushButton("Удалить")
         
@@ -103,7 +99,6 @@ class Category9Tab(QWidget):
             'calc_degree_input': calc_degree_input
         }
         self.raw_material_rows.append(row_data)
-        # Вставляем новую строку перед кнопкой "Добавить"
         self.materials_layout.insertWidget(self.materials_layout.count() - 1, row_widget)
         
         remove_button.clicked.connect(lambda: self._remove_row(row_data))

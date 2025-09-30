@@ -90,12 +90,10 @@ class Category19Tab(QWidget):
         row_layout = QHBoxLayout(row_widget)
         
         combo = QComboBox()
-        # Используем топливо из общих таблиц
         items = self.data_service.get_fuels_table_1_1()
         combo.addItems(items)
         
         consumption = QLineEdit(placeholderText="Расход, т")
-        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         consumption.setValidator(validator)
@@ -125,7 +123,6 @@ class Category19Tab(QWidget):
         category_combo.addItems(list(self.data_service.table_19_1["Автомобильные дороги федерального значения"]["Содержание"].keys()))
 
         length_input = QLineEdit(placeholderText="Протяженность, км")
-        # ИСПРАВЛЕНО
         validator = QDoubleValidator(0.0, 1e9, 6, self)
         validator.setLocale(self.c_locale)
         length_input.setValidator(validator)
@@ -133,6 +130,7 @@ class Category19Tab(QWidget):
         years_input = QSpinBox()
         years_input.setRange(1, 100)
         years_input.setSuffix(" лет")
+        years_input.setToolTip("Срок, на который рассчитаны работы (для распределения выбросов по годам).")
         
         remove_button = QPushButton("Удалить")
 
@@ -164,7 +162,7 @@ class Category19Tab(QWidget):
             method_index = self.method_combobox.currentIndex()
             co2_emissions = 0.0
 
-            if method_index == 0: # По расходу энергоресурсов
+            if method_index == 0:
                 if not self.fuel_rows:
                     raise ValueError("Добавьте хотя бы один энергоресурс.")
                 
@@ -177,7 +175,7 @@ class Category19Tab(QWidget):
                 co2_emissions = self.calculator.calculate_from_energy_consumption(fuel_data)
                 self.result_label.setText(f"Результат: {co2_emissions:.4f} тонн CO2")
 
-            elif method_index == 1: # По протяженности дорог
+            elif method_index == 1:
                 if not self.road_work_rows:
                     raise ValueError("Добавьте хотя бы один вид дорожных работ.")
                     

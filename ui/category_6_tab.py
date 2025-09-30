@@ -22,7 +22,6 @@ class Category6Tab(QWidget):
         self.data_service = data_service
         self.calculator = Category6Calculator(self.data_service)
         
-        # Списки для хранения динамических UI-элементов
         self.raw_carbonate_rows = []
         self.raw_dust_carbonate_rows = []
         self.raw_non_carbonate_rows = []
@@ -60,36 +59,42 @@ class Category6Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-    # --- Создание виджетов для методов расчета ---
-
     def _create_raw_materials_widget(self):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        # Основное сырье
-        carb_group = self._create_dynamic_group("Основное карбонатное сырье", "raw_carbonates_layout", self._add_raw_carbonate_row)
+        carb_group = QGroupBox("Основное карбонатное сырье")
+        self.raw_carbonates_layout = QVBoxLayout(carb_group)
+        add_carb_button = QPushButton("Добавить карбонат")
+        add_carb_button.clicked.connect(self._add_raw_carbonate_row)
+        self.raw_carbonates_layout.addWidget(add_carb_button)
         layout.addWidget(carb_group)
 
-        # Цементная пыль
         dust_group = QGroupBox("Цементная пыль (CKD) (Формула 6.1)")
         dust_layout = QVBoxLayout(dust_group)
         dust_form = QFormLayout()
         self.raw_dust_mass_input = self._create_line_edit("0.0", (0.0, 1e9, 6))
+        self.raw_dust_mass_input.setToolTip("Масса цементной пыли, уловленной и не возвращенной в печь.")
         self.raw_dust_calc_degree_input = self._create_line_edit("1.0", (0.0, 1.0, 4))
+        self.raw_dust_calc_degree_input.setToolTip("Степень кальцинирования карбонатов в пыли (доля от 0 до 1).")
         dust_form.addRow("Масса пыли (т):", self.raw_dust_mass_input)
         dust_form.addRow("Степень кальцинирования пыли (доля):", self.raw_dust_calc_degree_input)
         dust_layout.addLayout(dust_form)
         self.raw_dust_carbonates_layout = QVBoxLayout()
         add_dust_carb_btn = QPushButton("Добавить долю карбоната в пыли")
+        add_dust_carb_btn.setToolTip("Добавьте компонентный состав карбонатов в пыли, если он известен.")
         add_dust_carb_btn.clicked.connect(self._add_raw_dust_carbonate_row)
         dust_layout.addLayout(self.raw_dust_carbonates_layout)
         dust_layout.addWidget(add_dust_carb_btn)
         layout.addWidget(dust_group)
 
-        # Некарбонатное сырье
-        non_carb_group = self._create_dynamic_group("Некарбонатное сырье с содержанием углерода", "raw_non_carbonates_layout", self._add_raw_non_carbonate_row)
+        non_carb_group = QGroupBox("Некарбонатное сырье с содержанием углерода")
+        self.raw_non_carbonates_layout = QVBoxLayout(non_carb_group)
+        add_non_carb_btn = QPushButton("Добавить некарбонатное сырье")
+        add_non_carb_btn.clicked.connect(self._add_raw_non_carbonate_row)
+        self.raw_non_carbonates_layout.addWidget(add_non_carb_btn)
         layout.addWidget(non_carb_group)
 
         scroll_area.setWidget(widget)
@@ -101,58 +106,52 @@ class Category6Tab(QWidget):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        # Производство клинкера
         clinker_group = QGroupBox("Производство клинкера и его состав")
         clinker_layout = QFormLayout(clinker_group)
         self.clinker_production_input = self._create_line_edit("", (0.0, 1e9, 6))
+        self.clinker_production_input.setToolTip("Общая масса произведенного клинкера за год.")
         self.clinker_cao_fraction_input = self._create_line_edit("", (0.0, 1.0, 4), "Напр., 0.65")
+        self.clinker_cao_fraction_input.setToolTip("Массовая доля оксида кальция (CaO) в клинкере.")
         self.clinker_mgo_fraction_input = self._create_line_edit("", (0.0, 1.0, 4), "Напр., 0.02")
+        self.clinker_mgo_fraction_input.setToolTip("Массовая доля оксида магния (MgO) в клинкере.")
         clinker_layout.addRow("Масса клинкера (т):", self.clinker_production_input)
         clinker_layout.addRow("Массовая доля CaO в клинкере:", self.clinker_cao_fraction_input)
         clinker_layout.addRow("Массовая доля MgO в клинкере:", self.clinker_mgo_fraction_input)
         layout.addWidget(clinker_group)
         
-        # Цементная пыль
         dust_group = QGroupBox("Цементная пыль (CKD) (Формула 6.2)")
         dust_layout = QVBoxLayout(dust_group)
         dust_form = QFormLayout()
         self.clinker_dust_mass_input = self._create_line_edit("0.0", (0.0, 1e9, 6))
+        self.clinker_dust_mass_input.setToolTip("Масса цементной пыли, уловленной и не возвращенной в печь.")
         dust_form.addRow("Масса пыли (т):", self.clinker_dust_mass_input)
         dust_layout.addLayout(dust_form)
         self.clinker_dust_oxides_layout = QVBoxLayout()
         add_dust_oxide_btn = QPushButton("Добавить долю оксида в пыли")
+        add_dust_oxide_btn.setToolTip("Добавьте оксидный состав пыли, если он известен.")
         add_dust_oxide_btn.clicked.connect(self._add_clinker_dust_oxide_row)
         dust_layout.addLayout(self.clinker_dust_oxides_layout)
         dust_layout.addWidget(add_dust_oxide_btn)
         layout.addWidget(dust_group)
         
-        # Некарбонатное сырье
-        non_carb_group = self._create_dynamic_group("Некарбонатное сырье с содержанием углерода", "clinker_non_carbonates_layout", self._add_clinker_non_carbonate_row)
+        non_carb_group = QGroupBox("Некарбонатное сырье с содержанием углерода")
+        self.clinker_non_carbonates_layout = QVBoxLayout(non_carb_group)
+        add_non_carb_btn = QPushButton("Добавить некарбонатное сырье")
+        add_non_carb_btn.clicked.connect(self._add_clinker_non_carbonate_row)
+        self.clinker_non_carbonates_layout.addWidget(add_non_carb_btn)
         layout.addWidget(non_carb_group)
         
         scroll_area.setWidget(widget)
         return scroll_area
 
-    # --- Методы для создания и управления UI элементами ---
-
     def _create_line_edit(self, default_text="", validator_params=None, placeholder=""):
         line_edit = QLineEdit(default_text)
         line_edit.setPlaceholderText(placeholder)
         if validator_params:
-            # ИСПРАВЛЕНО
             validator = QDoubleValidator(*validator_params, self)
             validator.setLocale(self.c_locale)
             line_edit.setValidator(validator)
         return line_edit
-    
-    def _create_dynamic_group(self, title, layout_attr_name, add_func):
-        group = QGroupBox(title)
-        layout = QVBoxLayout(group)
-        setattr(self, layout_attr_name, layout)
-        add_button = QPushButton("Добавить запись")
-        add_button.clicked.connect(add_func)
-        layout.addWidget(add_button)
-        return group
     
     def _create_dynamic_row(self, storage, layout, items, fields):
         row_widget = QWidget()
@@ -206,8 +205,6 @@ class Category6Tab(QWidget):
             self.data_service.get_fuels_table_1_1(),
             [('consumption', 'Расход, т', (0.0, 1e9, 6))])
 
-    # --- Логика расчета ---
-    
     def _get_float(self, line_edit, field_name):
         text = line_edit.text().replace(',', '.')
         if not text: raise ValueError(f"Поле '{field_name}' не заполнено.")
@@ -218,7 +215,7 @@ class Category6Tab(QWidget):
             current_method_index = self.method_combobox.currentIndex()
             co2_emissions = 0.0
 
-            if current_method_index == 0: # Расчет по сырью
+            if current_method_index == 0:
                 carbonates = [{'name': r['combo'].currentText(), 'mass': self._get_float(r['mass'], 'Масса карбоната'), 'calcination_degree': self._get_float(r['calc_degree'], 'Степень кальцинирования')} for r in self.raw_carbonate_rows]
                 non_carbonates = [{'name': r['combo'].currentText(), 'consumption': self._get_float(r['consumption'], 'Расход некарбоната')} for r in self.raw_non_carbonate_rows]
                 
@@ -231,7 +228,7 @@ class Category6Tab(QWidget):
                 
                 co2_emissions = self.calculator.calculate_based_on_raw_materials(carbonates, cement_dust, non_carbonates)
 
-            elif current_method_index == 1: # Расчет по клинкеру
+            elif current_method_index == 1:
                 clinker_prod = self._get_float(self.clinker_production_input, 'Масса клинкера')
                 cao_frac = self._get_float(self.clinker_cao_fraction_input, 'Доля CaO')
                 mgo_frac = self._get_float(self.clinker_mgo_fraction_input, 'Доля MgO')
@@ -249,7 +246,6 @@ class Category6Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
-            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

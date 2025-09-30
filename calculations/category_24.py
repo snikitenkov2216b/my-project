@@ -4,6 +4,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+from config import N2O_N_TO_N2O_FACTOR # ИМПОРТ
 
 class Category24Calculator:
     """
@@ -17,7 +18,7 @@ class Category24Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.N2O_N_TO_N2O_FACTOR = 44 / 28
+        self.N2O_N_TO_N2O_FACTOR = N2O_N_TO_N2O_FACTOR
 
     def calculate_nitrogen_in_effluent(self, population: int, protein_per_capita: float, fnpr: float, fnon_con: float, find_com: float, sludge_nitrogen_removed: float) -> float:
         """

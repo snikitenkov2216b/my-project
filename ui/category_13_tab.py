@@ -74,9 +74,11 @@ class Category13Tab(QWidget):
         layout.addRow("Процесс и тип выброса:", self.process_combobox)
 
         self.production_mass_input = self._create_line_edit((0.0, 1e9, 6))
+        self.production_mass_input.setToolTip("Годовой объем производства основной продукции (ГХФУ-22 или SF6), тонн.")
         layout.addRow("Масса произведенной основной продукции (т):", self.production_mass_input)
         
         self.emission_factor_input = self._create_line_edit((0.0, 1e9, 6))
+        self.emission_factor_input.setToolTip("Коэффициент выбросов побочного продукта (CHF3 или SF6) в кг на тонну основной продукции.")
         layout.addRow("Коэффициент выбросов (кг/т):", self.emission_factor_input)
         
         return widget
@@ -86,9 +88,11 @@ class Category13Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.gas_flow_input = self._create_line_edit((0.0, 1e12, 6))
+        self.gas_flow_input.setToolTip("Общий годовой расход отходящих газов с установки, м³/год.")
         layout.addRow("Расход отходящих газов (м³/год):", self.gas_flow_input)
         
         self.concentration_input = self._create_line_edit((0.0, 1e9, 6))
+        self.concentration_input.setToolTip("Среднегодовая концентрация парникового газа (CHF3 или SF6) в отходящих газах, мг/м³.")
         layout.addRow("Средняя концентрация парникового газа (мг/м³):", self.concentration_input)
 
         return widget
@@ -98,12 +102,15 @@ class Category13Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.avg_gas_flow_input = self._create_line_edit((0.0, 1e9, 6))
+        self.avg_gas_flow_input.setToolTip("Средний расход отходящих газов за период измерений, м³/час.")
         layout.addRow("Средний расход отходящих газов (м³/час):", self.avg_gas_flow_input)
 
         self.avg_concentration_input = self._create_line_edit((0.0, 1e9, 6))
+        self.avg_concentration_input.setToolTip("Средняя концентрация парникового газа за период измерений, мг/м³.")
         layout.addRow("Средняя концентрация парникового газа (мг/м³):", self.avg_concentration_input)
         
         self.avg_production_input = self._create_line_edit((0.0, 1e9, 6))
+        self.avg_production_input.setToolTip("Средний объем производства продукции за период измерений, т/час.")
         layout.addRow("Среднее производство продукции (т/час):", self.avg_production_input)
 
         return widget

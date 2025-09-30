@@ -57,8 +57,6 @@ class Category7Tab(QWidget):
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         main_layout.addWidget(self.result_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-    # --- Создание виджетов для методов расчета ---
-
     def _create_raw_materials_widget(self):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -76,13 +74,16 @@ class Category7Tab(QWidget):
         dust_layout = QVBoxLayout(dust_group)
         dust_form = QFormLayout()
         self.raw_dust_mass_input = self._create_line_edit("0.0", (0.0, 1e9, 6))
+        self.raw_dust_mass_input.setToolTip("Масса известковой пыли, уловленной и не возвращенной в печь.")
         self.raw_dust_calc_degree_input = self._create_line_edit("1.0", (0.0, 1.0, 4))
+        self.raw_dust_calc_degree_input.setToolTip("Степень кальцинирования карбонатов в пыли (доля от 0 до 1).")
         dust_form.addRow("Масса пыли (т):", self.raw_dust_mass_input)
         dust_form.addRow("Степень кальцинирования пыли (доля):", self.raw_dust_calc_degree_input)
         dust_layout.addLayout(dust_form)
         
         self.raw_dust_carbonates_layout = QVBoxLayout()
         add_dust_carb_btn = QPushButton("Добавить долю карбоната в пыли")
+        add_dust_carb_btn.setToolTip("Добавьте компонентный состав карбонатов в пыли, если он известен.")
         add_dust_carb_btn.clicked.connect(self._add_raw_dust_carbonate_row)
         dust_layout.addLayout(self.raw_dust_carbonates_layout)
         dust_layout.addWidget(add_dust_carb_btn)
@@ -100,8 +101,11 @@ class Category7Tab(QWidget):
         lime_group = QGroupBox("Производство извести и ее состав")
         lime_form = QFormLayout(lime_group)
         self.lime_production_input = self._create_line_edit("", (0.0, 1e9, 6))
+        self.lime_production_input.setToolTip("Общая масса произведенной извести за отчетный период.")
         self.lime_cao_fraction_input = self._create_line_edit("", (0.0, 1.0, 4), "Напр., 0.95")
+        self.lime_cao_fraction_input.setToolTip("Массовая доля оксида кальция (CaO) в извести.")
         self.lime_mgo_fraction_input = self._create_line_edit("", (0.0, 1.0, 4), "Напр., 0.01")
+        self.lime_mgo_fraction_input.setToolTip("Массовая доля оксида магния (MgO) в извести.")
         lime_form.addRow("Масса произведенной извести (т):", self.lime_production_input)
         lime_form.addRow("Массовая доля CaO в извести:", self.lime_cao_fraction_input)
         lime_form.addRow("Массовая доля MgO в извести:", self.lime_mgo_fraction_input)
@@ -111,10 +115,12 @@ class Category7Tab(QWidget):
         dust_layout = QVBoxLayout(dust_group)
         dust_form = QFormLayout()
         self.lime_dust_mass_input = self._create_line_edit("0.0", (0.0, 1e9, 6))
+        self.lime_dust_mass_input.setToolTip("Масса известковой пыли, уловленной и не возвращенной в печь.")
         dust_form.addRow("Масса пыли (т):", self.lime_dust_mass_input)
         dust_layout.addLayout(dust_form)
         self.lime_dust_oxides_layout = QVBoxLayout()
         add_dust_oxide_btn = QPushButton("Добавить долю оксида в пыли")
+        add_dust_oxide_btn.setToolTip("Добавьте оксидный состав пыли, если он известен.")
         add_dust_oxide_btn.clicked.connect(self._add_lime_dust_oxide_row)
         dust_layout.addLayout(self.lime_dust_oxides_layout)
         dust_layout.addWidget(add_dust_oxide_btn)
@@ -122,8 +128,6 @@ class Category7Tab(QWidget):
         
         scroll_area.setWidget(widget)
         return scroll_area
-
-    # --- Методы для создания и управления UI элементами ---
 
     def _create_line_edit(self, default_text="", validator_params=None, placeholder=""):
         line_edit = QLineEdit(default_text)
@@ -153,7 +157,7 @@ class Category7Tab(QWidget):
         row_layout.addWidget(remove_button)
         
         storage.append(row_data)
-        layout.insertWidget(layout.count() - 1, row_widget) # Вставляем до кнопки "Добавить"
+        layout.insertWidget(layout.count() - 1, row_widget)
         remove_button.clicked.connect(lambda: self._remove_row(row_data, layout, storage))
 
     def _remove_row(self, row_data, layout, storage):
@@ -176,8 +180,6 @@ class Category7Tab(QWidget):
             ['CaO', 'MgO'],
             [('fraction', 'Доля в пыли', (0.0, 1.0, 4))])
 
-    # --- Логика расчета ---
-    
     def _get_float(self, line_edit, field_name):
         text = line_edit.text().replace(',', '.')
         if not text: raise ValueError(f"Поле '{field_name}' не заполнено.")
@@ -215,7 +217,6 @@ class Category7Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
-            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

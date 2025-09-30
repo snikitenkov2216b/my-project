@@ -34,7 +34,6 @@ class Category17Tab(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- Выбор метода ---
         method_layout = QFormLayout()
         self.method_combobox = QComboBox()
         self.method_combobox.addItems([
@@ -45,7 +44,6 @@ class Category17Tab(QWidget):
         method_layout.addRow("Выберите тип процесса/расчета:", self.method_combobox)
         main_layout.addLayout(method_layout)
         
-        # --- Стек виджетов ---
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self._create_fuel_use_widget())
         self.stacked_widget.addWidget(self._create_reductants_widget())
@@ -54,7 +52,6 @@ class Category17Tab(QWidget):
         
         self.method_combobox.currentIndexChanged.connect(self.stacked_widget.setCurrentIndex)
         
-        # --- Кнопка и результат ---
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
         main_layout.addWidget(self.calculate_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -111,7 +108,6 @@ class Category17Tab(QWidget):
         layout.addWidget(group)
         return scroll_area
 
-    # --- Методы для добавления/удаления строк ---
     def _add_fuel_use_fuel_row(self):
         self._create_dynamic_row(self.fuel_use_fuels, self.fuel_use_fuels_layout, 
                                  self.data_service.get_fuels_table_1_1(), 
@@ -144,7 +140,6 @@ class Category17Tab(QWidget):
         
         for key, placeholder, params in fields:
             editor = QLineEdit(placeholderText=placeholder)
-            # ИСПРАВЛЕНО
             validator = QDoubleValidator(*params, self)
             validator.setLocale(self.c_locale)
             editor.setValidator(validator)
@@ -206,7 +201,6 @@ class Category17Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
-            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

@@ -40,7 +40,6 @@ class Category8Tab(QWidget):
         
         add_button = QPushButton("Добавить карбонат")
         add_button.clicked.connect(self._add_carbonate_row)
-        # Добавляем кнопку "Добавить" внутрь QVBoxLayout, чтобы она была последним элементом
         self.carbonates_layout.addWidget(add_button)
 
         form_container_layout.addWidget(group_box)
@@ -58,28 +57,25 @@ class Category8Tab(QWidget):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         
-        # Выпадающий список с карбонатами
         combo = QComboBox()
         carbonates_6_1 = self.data_service.get_carbonate_formulas_table_6_1()
         carbonates_8_1 = self.data_service.get_glass_carbonate_formulas_table_8_1()
         all_carbonates = sorted(list(set(carbonates_6_1 + carbonates_8_1)))
         combo.addItems(all_carbonates)
         
-        # Поле для ввода массы
         mass_input = QLineEdit()
         mass_input.setPlaceholderText("Масса, т")
-        # ИСПРАВЛЕНО
         mass_validator = QDoubleValidator(0.0, 1e9, 6, self)
         mass_validator.setLocale(self.c_locale)
         mass_input.setValidator(mass_validator)
+        mass_input.setToolTip("Годовое потребление данного вида карбонатного сырья.")
         
-        # Поле для степени кальцинирования
         calc_degree_input = QLineEdit("1.0")
         calc_degree_input.setPlaceholderText("Степень кальц., доля")
-        # ИСПРАВЛЕНО
         calc_degree_validator = QDoubleValidator(0.0, 1.0, 4, self)
         calc_degree_validator.setLocale(self.c_locale)
         calc_degree_input.setValidator(calc_degree_validator)
+        calc_degree_input.setToolTip("Степень кальцинирования (доля от 0 до 1). По умолчанию 1.0 (100%).")
 
         remove_button = QPushButton("Удалить")
         
@@ -96,8 +92,7 @@ class Category8Tab(QWidget):
             'calc_degree_input': calc_degree_input
         }
         self.carbonate_rows.append(row_data)
-        # Вставляем новую строку перед кнопкой "Добавить"
-        self.carbonates_layout.insertWidget(self.carbonates_layout.count() - 1, row_widget)
+        self.materials_layout.insertWidget(self.materials_layout.count() - 1, row_widget)
         
         remove_button.clicked.connect(lambda: self._remove_row(row_data))
 

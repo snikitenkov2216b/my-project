@@ -82,8 +82,10 @@ class Category23Tab(QWidget):
         self.dom_population = self._create_line_edit("", (0, 1e9, 0))
         tow_layout.addRow("Численность населения (чел):", self.dom_population)
         self.dom_bod = self._create_line_edit("60", (0.0, 1e9, 6)) # 60 г/чел/день - стандартное значение
+        self.dom_bod.setToolTip("Биохимическое потребление кислорода на одного жителя. Стандартное значение: 60 г/чел/сутки.")
         tow_layout.addRow("Образование БПК на жителя (г/чел/сутки):", self.dom_bod)
         self.dom_ind_factor = self._create_line_edit("1.25", (0.0, 1e9, 6))
+        self.dom_ind_factor.setToolTip("Поправочный коэффициент для промышленных сбросов в бытовую канализацию. Стандартное значение: 1.25.")
         tow_layout.addRow("Коэф. для пром. сбросов (I):", self.dom_ind_factor)
         layout.addWidget(tow_group)
         
@@ -91,10 +93,13 @@ class Category23Tab(QWidget):
         common_group = QGroupBox("Общие параметры для расчета выбросов")
         common_layout = QFormLayout(common_group)
         self.dom_sludge_removed = self._create_line_edit("0.0", (0.0, 1e12, 6))
+        self.dom_sludge_removed.setToolTip("Общее количество БПК, удаленное в виде отстоя за год.")
         common_layout.addRow("Удалено с отстоем (S, кг БПК/год):", self.dom_sludge_removed)
         self.dom_recovered_ch4 = self._create_line_edit("0.0", (0.0, 1e12, 6))
+        self.dom_recovered_ch4.setToolTip("Количество метана, собранного и утилизированного за год.")
         common_layout.addRow("Рекуперировано метана (R, кг CH4/год):", self.dom_recovered_ch4)
         self.dom_bo = self._create_line_edit("0.6", (0.0, 1.0, 6)) # 0.6 кг CH4/кг БПК - стандарт
+        self.dom_bo.setToolTip("Максимальная способность образования метана. Стандартное значение: 0.6 кг CH4/кг БПК.")
         common_layout.addRow("Макс. способность образования CH4 (Bo):", self.dom_bo)
         layout.addWidget(common_group)
 
@@ -113,12 +118,15 @@ class Category23Tab(QWidget):
         layout = QFormLayout(row_widget)
         
         population_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        population_fraction.setToolTip("Доля населения, чьи сточные воды обрабатываются в данной системе.")
         layout.addRow("Доля населения (U_i):", population_fraction)
         
         treatment_fraction = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        treatment_fraction.setToolTip("Доля сточных вод, обрабатываемых именно этим способом в рамках данной системы.")
         layout.addRow("Доля стоков в системе (T_ij):", treatment_fraction)
         
         mcf_factor = self._create_line_edit("", (0.0, 1.0, 4), "доля от 0 до 1")
+        mcf_factor.setToolTip("Поправочный коэффициент для метана (зависит от типа системы очистки, см. Таблицу 23.1).")
         layout.addRow("Коэф. для метана (MCF_j):", mcf_factor)
         
         remove_button = QPushButton("Удалить")
@@ -140,22 +148,29 @@ class Category23Tab(QWidget):
         tow_group = QGroupBox("Расчет органически разлагаемого материала (TOW)")
         tow_layout = QFormLayout(tow_group)
         self.ind_production = self._create_line_edit("", (0.0, 1e9, 6))
+        self.ind_production.setToolTip("Общий годовой объем производства для конкретной отрасли, тонн.")
         tow_layout.addRow("Объем производства (P, т/год):", self.ind_production)
         self.ind_wastewater = self._create_line_edit("", (0.0, 1e9, 6))
+        self.ind_wastewater.setToolTip("Объем сточных вод на единицу продукции (см. Таблицу 23.2).")
         tow_layout.addRow("Объем сточных вод на ед. продукции (W, м³/т):", self.ind_wastewater)
         self.ind_cod = self._create_line_edit("", (0.0, 1e9, 6))
+        self.ind_cod.setToolTip("Химическое потребление кислорода (ХПК) в сточных водах (см. Таблицу 23.2).")
         tow_layout.addRow("Содержание разлагаемых компонентов (COD, кг ХПК/м³):", self.ind_cod)
         layout.addWidget(tow_group)
 
         emission_group = QGroupBox("Параметры для расчета выбросов")
         emission_layout = QFormLayout(emission_group)
         self.ind_sludge_removed = self._create_line_edit("0.0", (0.0, 1e12, 6))
+        self.ind_sludge_removed.setToolTip("Количество органического компонента (ХПК), удаленного в виде отстоя за год.")
         emission_layout.addRow("Удалено с отстоем (S, кг ХПК/год):", self.ind_sludge_removed)
         self.ind_recovered_ch4 = self._create_line_edit("0.0", (0.0, 1e12, 6))
+        self.ind_recovered_ch4.setToolTip("Количество метана, собранного и утилизированного за год.")
         emission_layout.addRow("Рекуперировано метана (R, кг CH4/год):", self.ind_recovered_ch4)
         self.ind_bo = self._create_line_edit("0.25", (0.0, 1.0, 6)) # 0.25 кг CH4/кг ХПК - стандарт
+        self.ind_bo.setToolTip("Максимальная способность образования метана. Стандартное значение: 0.25 кг CH4/кг ХПК.")
         emission_layout.addRow("Макс. способность образования CH4 (Bo):", self.ind_bo)
         self.ind_mcf = self._create_line_edit("", (0.0, 1.0, 4))
+        self.ind_mcf.setToolTip("Поправочный коэффициент для метана (см. Таблицу 23.3).")
         emission_layout.addRow("Поправочный коэффициент для метана (MCF):", self.ind_mcf)
         layout.addWidget(emission_group)
         
@@ -217,6 +232,7 @@ class Category23Tab(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка ввода", str(e))
+            self.result_label.setText("Результат: Ошибка")
         except Exception as e:
             QMessageBox.critical(self, "Критическая ошибка", f"Произошла непредвиденная ошибка: {e}")
             self.result_label.setText("Результат: Ошибка")

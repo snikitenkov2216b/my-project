@@ -4,6 +4,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+from config import CARBON_TO_CO2_FACTOR # ИМПОРТ
 
 class Category16Calculator:
     """
@@ -17,7 +18,7 @@ class Category16Calculator:
         :param data_service: Экземпляр сервиса для доступа к табличным данным.
         """
         self.data_service = data_service
-        self.CARBON_TO_CO2_FACTOR = 44 / 12
+        self.CARBON_TO_CO2_FACTOR = CARBON_TO_CO2_FACTOR
 
     def calculate_pfc_emissions(self, technology: str, aluminium_production: float, aef: float, aed: float) -> dict:
         """

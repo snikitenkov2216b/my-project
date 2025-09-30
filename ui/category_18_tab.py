@@ -71,11 +71,11 @@ class Category18Tab(QWidget):
         layout = QFormLayout(widget)
 
         self.road_fuel_combobox = QComboBox()
-        # ИСПРАВЛЕНО
         self.road_fuel_combobox.addItems(self.data_service.get_transport_fuel_names_18_1())
         layout.addRow("Вид топлива:", self.road_fuel_combobox)
 
         self.road_consumption_input = self._create_line_edit((0.0, 1e9, 6))
+        self.road_consumption_input.setToolTip("Введите общий расход топлива за год.")
         layout.addRow("Расход топлива:", self.road_consumption_input)
 
         self.road_unit_mass_radio = QRadioButton("Тонны")
@@ -91,7 +91,6 @@ class Category18Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.rail_fuel_combobox = QComboBox()
-        # ИСПРАВЛЕНО
         rail_fuels = [f for f in self.data_service.get_transport_fuel_names_18_1() if "дизельное" in f.lower()]
         self.rail_fuel_combobox.addItems(rail_fuels)
         layout.addRow("Вид топлива:", self.rail_fuel_combobox)
@@ -106,7 +105,6 @@ class Category18Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.water_fuel_combobox = QComboBox()
-        # ИСПРАВЛЕНО
         water_fuels = [f for f in self.data_service.get_transport_fuel_names_18_1() if any(sub in f.lower() for sub in ["мазут", "дизельное", "флотский"])]
         self.water_fuel_combobox.addItems(water_fuels)
         layout.addRow("Вид топлива:", self.water_fuel_combobox)
@@ -121,7 +119,6 @@ class Category18Tab(QWidget):
         layout = QFormLayout(widget)
         
         self.air_fuel_combobox = QComboBox()
-        # ИСПРАВЛЕНО
         air_fuels = [f for f in self.data_service.get_transport_fuel_names_18_1() if any(sub in f.lower() for sub in ["авиационный", "топливо тс-1"])]
         self.air_fuel_combobox.addItems(air_fuels)
         layout.addRow("Вид топлива:", self.air_fuel_combobox)
@@ -156,8 +153,7 @@ class Category18Tab(QWidget):
             elif current_transport_index == 2: # Водный
                 fuel_name = self.water_fuel_combobox.currentText()
                 consumption = self._get_float(self.water_consumption_input, "Расход топлива")
-                # Для упрощения UI не запрашиваем CF_TCE и CF_NCV, т.к. калькулятор их пересчитывает в NCV
-                co2_emissions = self.calculator.calculate_water_transport_emissions(fuel_name, consumption, 0, 0)
+                co2_emissions = self.calculator.calculate_water_transport_emissions(fuel_name, consumption)
             
             elif current_transport_index == 3: # Воздушный
                 fuel_name = self.air_fuel_combobox.currentText()
