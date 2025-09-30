@@ -1,8 +1,8 @@
 # ui/main_window.py - Главное окно приложения.
-# Код обновлен для добавления дашборда и использования фабрики калькуляторов.
+# Код обновлен для добавления дашборда, группировки категорий и новых вкладок.
 # Комментарии на русском. Поддержка UTF-8.
 
-from PyQt6.QtWidgets import QMainWindow, QTabWidget
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
 from data_models import DataService
 from calculations.calculator_factory import CalculatorFactory
@@ -53,32 +53,40 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
-        # Добавляем дашборд в самое начало
-        self.tabs.addTab(DashboardTab(self.tabs), "Главная панель")
+        # Создаем контейнер для всех категорий
+        self.categories_tabs = QTabWidget()
 
-        # Добавляем все вкладки для категорий, передавая им готовый калькулятор
-        self.tabs.addTab(Category0Tab(self.calculator_factory.get_calculator("Category0")), "Кат. 0: Расход ресурсов")
-        self.tabs.addTab(Category1Tab(self.calculator_factory.get_calculator("Category1")), "Кат. 1: Стац. сжигание")
-        self.tabs.addTab(Category2Tab(self.calculator_factory.get_calculator("Category2")), "Кат. 2: Факелы")
-        self.tabs.addTab(Category3Tab(self.calculator_factory.get_calculator("Category3")), "Кат. 3: Фугитивные")
-        self.tabs.addTab(Category4Tab(self.calculator_factory.get_calculator("Category4")), "Кат. 4: Нефтепереработка")
-        self.tabs.addTab(Category5Tab(self.calculator_factory.get_calculator("Category5")), "Кат. 5: Производство кокса")
-        self.tabs.addTab(Category6Tab(self.calculator_factory.get_calculator("Category6")), "Кат. 6: Производство цемента")
-        self.tabs.addTab(Category7Tab(self.calculator_factory.get_calculator("Category7")), "Кат. 7: Производство извести")
-        self.tabs.addTab(Category8Tab(self.calculator_factory.get_calculator("Category8")), "Кат. 8: Производство стекла")
-        self.tabs.addTab(Category9Tab(self.calculator_factory.get_calculator("Category9")), "Кат. 9: Керамика")
-        self.tabs.addTab(Category10Tab(self.calculator_factory.get_calculator("Category10")), "Кат. 10: Производство аммиака")
-        self.tabs.addTab(Category11Tab(self.calculator_factory.get_calculator("Category11")), "Кат. 11: Хим. производство (N2O)")
-        self.tabs.addTab(Category12Tab(self.calculator_factory.get_calculator("Category12")), "Кат. 12: Нефтехимия")
-        self.tabs.addTab(Category13Tab(self.calculator_factory.get_calculator("Category13")), "Кат. 13: Фторсодержащие")
-        self.tabs.addTab(Category14Tab(self.calculator_factory.get_calculator("Category14")), "Кат. 14: Черная металлургия")
-        self.tabs.addTab(Category15Tab(self.calculator_factory.get_calculator("Category15")), "Кат. 15: Ферросплавы")
-        self.tabs.addTab(Category16Tab(self.calculator_factory.get_calculator("Category16")), "Кат. 16: Алюминий")
-        self.tabs.addTab(Category17Tab(self.calculator_factory.get_calculator("Category17")), "Кат. 17: Прочие процессы")
-        self.tabs.addTab(Category18Tab(self.calculator_factory.get_calculator("Category18")), "Кат. 18: Транспорт")
-        self.tabs.addTab(Category19Tab(self.calculator_factory.get_calculator("Category19")), "Кат. 19: Дор. хозяйство")
-        self.tabs.addTab(Category20Tab(self.calculator_factory.get_calculator("Category20")), "Кат. 20: Захоронение отходов")
-        self.tabs.addTab(Category21Tab(self.calculator_factory.get_calculator("Category21")), "Кат. 21: Био. переработка")
-        self.tabs.addTab(Category22Tab(self.calculator_factory.get_calculator("Category22")), "Кат. 22: Сжигание отходов")
-        self.tabs.addTab(Category23Tab(self.calculator_factory.get_calculator("Category23")), "Кат. 23: Сточные воды (CH4)")
-        self.tabs.addTab(Category24Tab(self.calculator_factory.get_calculator("Category24")), "Кат. 24: Сточные воды (N2O)")
+        # Добавляем дашборд и вкладку с категориями в главное окно
+        self.tabs.addTab(DashboardTab(self.categories_tabs), "Главная панель")
+        self.tabs.addTab(self.categories_tabs, "Выбросы ПГ")
+
+        # Добавляем все вкладки для категорий в контейнер "Категории"
+        self.categories_tabs.addTab(Category0Tab(self.calculator_factory.get_calculator("Category0")), "Кат. 0: Расход ресурсов")
+        self.categories_tabs.addTab(Category1Tab(self.calculator_factory.get_calculator("Category1")), "Кат. 1: Стац. сжигание")
+        self.categories_tabs.addTab(Category2Tab(self.calculator_factory.get_calculator("Category2")), "Кат. 2: Факелы")
+        self.categories_tabs.addTab(Category3Tab(self.calculator_factory.get_calculator("Category3")), "Кат. 3: Фугитивные")
+        self.categories_tabs.addTab(Category4Tab(self.calculator_factory.get_calculator("Category4")), "Кат. 4: Нефтепереработка")
+        self.categories_tabs.addTab(Category5Tab(self.calculator_factory.get_calculator("Category5")), "Кат. 5: Производство кокса")
+        self.categories_tabs.addTab(Category6Tab(self.calculator_factory.get_calculator("Category6")), "Кат. 6: Производство цемента")
+        self.categories_tabs.addTab(Category7Tab(self.calculator_factory.get_calculator("Category7")), "Кат. 7: Производство извести")
+        self.categories_tabs.addTab(Category8Tab(self.calculator_factory.get_calculator("Category8")), "Кат. 8: Производство стекла")
+        self.categories_tabs.addTab(Category9Tab(self.calculator_factory.get_calculator("Category9")), "Кат. 9: Керамика")
+        self.categories_tabs.addTab(Category10Tab(self.calculator_factory.get_calculator("Category10")), "Кат. 10: Производство аммиака")
+        self.categories_tabs.addTab(Category11Tab(self.calculator_factory.get_calculator("Category11")), "Кат. 11: Хим. производство (N2O)")
+        self.categories_tabs.addTab(Category12Tab(self.calculator_factory.get_calculator("Category12")), "Кат. 12: Нефтехимия")
+        self.categories_tabs.addTab(Category13Tab(self.calculator_factory.get_calculator("Category13")), "Кат. 13: Фторсодержащие")
+        self.categories_tabs.addTab(Category14Tab(self.calculator_factory.get_calculator("Category14")), "Кат. 14: Черная металлургия")
+        self.categories_tabs.addTab(Category15Tab(self.calculator_factory.get_calculator("Category15")), "Кат. 15: Ферросплавы")
+        self.categories_tabs.addTab(Category16Tab(self.calculator_factory.get_calculator("Category16")), "Кат. 16: Алюминий")
+        self.categories_tabs.addTab(Category17Tab(self.calculator_factory.get_calculator("Category17")), "Кат. 17: Прочие процессы")
+        self.categories_tabs.addTab(Category18Tab(self.calculator_factory.get_calculator("Category18")), "Кат. 18: Транспорт")
+        self.categories_tabs.addTab(Category19Tab(self.calculator_factory.get_calculator("Category19")), "Кат. 19: Дор. хозяйство")
+        self.categories_tabs.addTab(Category20Tab(self.calculator_factory.get_calculator("Category20")), "Кат. 20: Захоронение отходов")
+        self.categories_tabs.addTab(Category21Tab(self.calculator_factory.get_calculator("Category21")), "Кат. 21: Био. переработка")
+        self.categories_tabs.addTab(Category22Tab(self.calculator_factory.get_calculator("Category22")), "Кат. 22: Сжигание отходов")
+        self.categories_tabs.addTab(Category23Tab(self.calculator_factory.get_calculator("Category23")), "Кат. 23: Сточные воды (CH4)")
+        self.categories_tabs.addTab(Category24Tab(self.calculator_factory.get_calculator("Category24")), "Кат. 24: Сточные воды (N2O)")
+        
+        # Добавляем новые вкладки-заглушки в главное окно
+        self.tabs.addTab(QWidget(), "Поглощение ПГ")
+        self.tabs.addTab(QWidget(), "Своя формула")
