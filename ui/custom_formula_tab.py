@@ -16,8 +16,6 @@ from PyQt6.QtCore import Qt, QLocale, QTimer
 from calculations.custom_formula_evaluator import CustomFormulaEvaluator
 from ui.formula_library_dialog import FormulaLibraryDialog, LIBRARY_FILE
 
-from paths import LIBRARY_FILE
-
 class CustomFormulaTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -293,115 +291,41 @@ class CustomFormulaTab(QWidget):
                 QMessageBox.information(self, "Успех", f"Формула '{selected_formula['name']}' загружена.")
 
     def _save_formula(self):
-        """Сохраняет текущую формулу в библиотеку с обработкой ошибок."""
         main_formula = self.formula_input.text()
-        
         if not main_formula:
-            QMessageBox.warning(
-                self, 
-                "Ошибка", 
-                "Нечего сохранять. Введите основную формулу."
-            )
+            QMessageBox.warning(self, "Ошибка", "Нечего сохранять. Введите основную формулу.")
             return
 
-        # Запрашиваем название формулы
-        name, ok = QInputDialog.getText(
-            self, 
-            "Сохранить формулу", 
-            "Введите название формулы:"
-        )
-        
-        if not ok or not name:
-            return
-        
-        # Собираем данные формулы
-        formula_data = {
-            "name": name,
-            "main_formula": main_formula,
-            "sum_blocks": [
-                {
-                    "name": block["name"],
-                    "expression": block["expression_input"].text(),
-                    "item_count": block["item_count"].value()
-                } 
-                for block in self.sum_blocks
-            ]
-        }
-        
-        try:
-            # Загружаем существующую библиотеку или создаем новую
-            if LIBRARY_FILE.exists():
+        name, ok = QInputDialog.getText(self, "Сохранить формулу", "Введите название формулы:")
+        if ok and name:
+            formula_data = {
+                "name": name,
+                "main_formula": main_formula,
+                "sum_blocks": [
+                    {
+                        "name": block["name"],
+                        "expression": block["expression_input"].text(),
+                        "item_count": block["item_count"].value()
+                    } for block in self.sum_blocks
+                ]
+            }
+            
+            try:
                 try:
                     with open(LIBRARY_FILE, 'r', encoding='utf-8') as f:
                         library = json.load(f)
-                    
-                    # Проверяем формат
-                    if not isinstance(library, list):
-                        logging.warning("Файл библиотеки имеет неверный формат. Создаем новый.")
-                        library = []
-                        
-                except json.JSONDecodeError as e:
-                    logging.error(f"Ошибка чтения библиотеки: {e}")
-                    reply = QMessageBox.question(
-                        self,
-                        "Ошибка файла",
-                        "Файл библиотеки поврежден. Создать новый файл?",
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                    )
-                    if reply == QMessageBox.StandardButton.Yes:
-                        library = []
-                    else:
-                        return
-            else:
-                library = []
-                logging.info("Создается новый файл библиотеки формул.")
-            
-            # Удаляем формулу с таким же именем, если существует
-            library = [f for f in library if f.get('name') != name]
-            
-            # Добавляем новую формулу
-            library.append(formula_data)
-            
-            # Создаем директорию, если её нет
-            LIBRARY_FILE.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Сохраняем библиотеку
-            with open(LIBRARY_FILE, 'w', encoding='utf-8') as f:
-                json.dump(library, f, ensure_ascii=False, indent=4)
-            
-            QMessageBox.information(
-                self, 
-                "Успех", 
-                f"Формула '{name}' сохранена в библиотеку.\n"
-                f"Файл: {LIBRARY_FILE}"
-            )
-            logging.info(f"Формула '{name}' сохранена в библиотеку.")
-            
-        except PermissionError as e:
-            logging.error(f"Нет прав для записи библиотеки: {e}")
-            QMessageBox.critical(
-                self,
-                "Ошибка доступа",
-                f"Нет прав для сохранения формулы.\n"
-                f"Файл: {LIBRARY_FILE}\n\n"
-                f"Проверьте права доступа."
-            )
-            
-        except OSError as e:
-            logging.error(f"Ошибка записи файла: {e}", exc_info=True)
-            QMessageBox.critical(
-                self,
-                "Ошибка записи",
-                f"Ошибка при сохранении формулы:\n{e}"
-            )
-            
-        except Exception as e:
-            logging.error(f"Неожиданная ошибка при сохранении формулы: {e}", exc_info=True)
-            QMessageBox.critical(
-                self, 
-                "Ошибка", 
-                f"Не удалось сохранить формулу:\n{e}"
-            )
+                except (FileNotFoundError, json.JSONDecodeError):
+                    library = []
+                
+                library = [f for f in library if f['name'] != name]
+                library.append(formula_data)
+                
+                with open(LIBRARY_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(library, f, ensure_ascii=False, indent=4)
+                
+                QMessageBox.information(self, "Успех", f"Формула '{name}' сохранена в библиотеку.")
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить формулу: {e}")
 
     def _show_help(self):
         help_text = """

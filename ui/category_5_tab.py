@@ -21,10 +21,6 @@ from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_5 import Category5Calculator
 
-from ui.helpers import (
-    SectionHeader, InfoBox, ResultDisplayWidget, 
-    BalanceVisualizationWidget, HorizontalLine, create_tooltip_style
-)
 
 class Category5Tab(QWidget):
     """
@@ -89,11 +85,6 @@ class Category5Tab(QWidget):
             add_by_product_button, alignment=Qt.AlignmentFlag.AlignLeft
         )
         form_container_layout.addWidget(outputs_group)
-
-        self.balance_widget = BalanceVisualizationWidget()
-        form_container_layout.addWidget(self.balance_widget)
-        
-        form_container_layout.addWidget(HorizontalLine())
 
         self.calculate_button = QPushButton("Рассчитать выбросы CO2")
         self.calculate_button.clicked.connect(self._perform_calculation)
@@ -200,32 +191,6 @@ class Category5Tab(QWidget):
                     self.main_product_consumption, "Производство кокса"
                 ),
             }
-
-            # Входящий углерод
-            for rm in raw_materials:
-                fuel_data = self.calculator.data_service.get_fuel_data_table_1_1(rm['name'])
-                if fuel_data and 'W_C_ut' in fuel_data:
-                    carbon_in += rm['consumption'] * fuel_data['W_C_ut']
-            
-            for fuel in fuels:
-                fuel_data = self.calculator.data_service.get_fuel_data_table_1_1(fuel['name'])
-                if fuel_data and 'W_C_ut' in fuel_data:
-                    carbon_in += fuel['consumption'] * fuel_data['W_C_ut']
-            
-            # Выходящий углерод
-            if main_product['production'] > 0:
-                prod_data = self.calculator.data_service.get_fuel_data_table_1_1(main_product['name'])
-                if prod_data and 'W_C_ut' in prod_data:
-                    carbon_out += main_product['production'] * prod_data['W_C_ut']
-            
-            for bp in by_products:
-                bp_data = self.calculator.data_service.get_fuel_data_table_1_1(bp['name'])
-                if bp_data and 'W_C_ut' in bp_data:
-                    carbon_out += bp['production'] * bp_data['W_C_ut']
-            
-            # Обновляем виджет баланса
-            self.balance_widget.update_balance(carbon_in, carbon_out)
-            
             co2_emissions = self.calculator.calculate_emissions(
                 raw_materials, fuels, main_product, by_products
             )
