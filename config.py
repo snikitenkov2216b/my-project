@@ -2,12 +2,16 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 # Коэффициент перевода массы углерода (C) в массу диоксида углерода (CO2)
-CARBON_TO_CO2_FACTOR = 44 / 12
+CARBON_TO_CO2_FACTOR = 3.664
 
 # Коэффициент перевода массы азота (N2) в массу закиси азота (N2O)
-N2O_N_TO_N2O_FACTOR = 44 / 28
+N2O_N_TO_N2O_FACTOR = 1.571
 
 # Стандартные коэффициенты окисления (доли)
 OXIDATION_FACTOR_GAS = 0.995
 OXIDATION_FACTOR_LIQUID = 0.99
 OXIDATION_FACTOR_SOLID = 0.98
+
+# Физико-химические константы
+MOLAR_MASS_CO2 = 44.011
+MOLAR_MASS_CH4 = 16.043

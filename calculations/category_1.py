@@ -3,7 +3,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
-from config import CARBON_TO_CO2_FACTOR # ИМПОРТ
+from config import CARBON_TO_CO2_FACTOR, MOLAR_MASS_CO2# ИМПОРТ
 
 class Category1Calculator:
     """
@@ -83,9 +83,8 @@ class Category1Calculator:
         :param fuel_density: Плотность газообразного топлива, кг/м3.
         :return: Коэффициент выбросов (т CO2/тыс. м3).
         """
-        molar_mass_co2 = 44.011
         ef_sum = sum(
-            ((comp['mass_fraction'] * comp['carbon_atoms'] * molar_mass_co2) / comp['molar_mass'])
+            ((comp['mass_fraction'] * comp['carbon_atoms'] * MOLAR_MASS_CO2) / comp['molar_mass'])
             for comp in components
         )
         return ef_sum * fuel_density * 10**-2

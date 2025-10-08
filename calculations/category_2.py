@@ -3,6 +3,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models import DataService
+from config import MOLAR_MASS_CO2
 
 class Category2Calculator:
     """
@@ -31,7 +32,6 @@ class Category2Calculator:
         :param by_mass: Флаг, указывающий, что расчет ведется по массовым долям (формула 2.3).
         :return: Коэффициент выбросов, т CO2/тыс. м3.
         """
-        molar_mass_co2 = 44.011
         rho_co2_standard = self.data_service.get_density_data_table_1_2()['rho_CO2']
 
         if not by_mass:
@@ -49,7 +49,7 @@ class Category2Calculator:
                 raise ValueError("Плотность газа для расчета по массе должна быть больше нуля.")
             w_co2 = next((comp.get('mass_fraction', 0.0) for comp in gas_composition if comp['name'] == 'CO2'), 0.0)
             sum_term = sum(
-                ((comp.get('mass_fraction', 0.0) * comp.get('carbon_atoms', 0) * molar_mass_co2) / comp.get('molar_mass', 1))
+                ((comp.get('mass_fraction', 0.0) * comp.get('carbon_atoms', 0) * MOLAR_MASS_CO2) / comp.get('molar_mass', 1))
                 for comp in gas_composition if comp['name'] != 'CO2'
             )
             # EF = (W_CO2 + sum(...) * (1 - CF)) * rho_gas * 10^-2
