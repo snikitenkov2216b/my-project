@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
 
         # Добавляем дашборд и вкладку с категориями в главное окно
         self.tabs.addTab(DashboardTab(self.categories_tabs), "Главная панель")
-        self.tabs.addTab(self.categories_tabs, "Категории")
+        self.tabs.addTab(self.categories_tabs, "Выбросы ПГ")
 
         # Добавляем все вкладки для категорий в контейнер "Категории"
         self.categories_tabs.addTab(Category0Tab(self.calculator_factory.get_calculator("Category0")), "Кат. 0: Расход ресурсов")

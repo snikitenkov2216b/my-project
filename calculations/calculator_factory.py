@@ -29,10 +29,12 @@ from calculations.category_22 import Category22Calculator
 from calculations.category_23 import Category23Calculator
 from calculations.category_24 import Category24Calculator
 
+
 class CalculatorFactory:
     """
     Фабрика для создания и предоставления экземпляров калькуляторов для всех категорий.
     """
+
     def __init__(self, data_service: DataService):
         """
         Конструктор фабрики.
@@ -53,7 +55,9 @@ class CalculatorFactory:
                 if category_name == "Category0":
                     self._calculators[category_name] = calculator_class()
                 else:
-                    self._calculators[category_name] = calculator_class(self._data_service)
+                    self._calculators[category_name] = calculator_class(
+                        self._data_service
+                    )
             else:
                 return None
         return self._calculators[category_name]
