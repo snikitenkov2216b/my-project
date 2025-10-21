@@ -631,10 +631,10 @@ class DataService:
 
     def get_ferroalloy_products(self):
         return FERROALLOY_PRODUCTS
-    
-    @dataclass
-    class RegionalForestData:
-        """Данные по лесам для субъектов РФ."""
+
+@dataclass
+class RegionalForestData:
+    """Данные по лесам для субъектов РФ."""
     region: str
     # Покрытые лесом земли
     above_biomass: float  # Надземная биомасса, т C/га
