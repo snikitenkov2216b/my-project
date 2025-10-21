@@ -2,7 +2,7 @@
 # Код обновлен для использования централизованных констант и валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
-from data_models import DataService
+from data_models_extended import DataService
 from config import CARBON_TO_CO2_FACTOR # ИМПОРТ
 
 class Category17Calculator:

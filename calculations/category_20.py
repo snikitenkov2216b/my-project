@@ -3,7 +3,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 import math
-from data_models import DataService
+from data_models_extended import DataService
 
 class Category20Calculator:
     """

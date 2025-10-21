@@ -2,7 +2,7 @@
 # Код обновлен для полной реализации формул 7.1 и 7.2 из методики.
 # Комментарии на русском. Поддержка UTF-8.
 
-from data_models import DataService
+from data_models_extended import DataService
 
 class Category7Calculator:
     """

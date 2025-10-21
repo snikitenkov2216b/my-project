@@ -2,7 +2,7 @@
 # Код обновлен для использования централизованных констант и валидации.
 # Комментарии на русском. Поддержка UTF-8.
 
-from data_models import DataService
+from data_models_extended import DataService
 from config import N2O_N_TO_N2O_FACTOR  # ИМПОРТ
 
 

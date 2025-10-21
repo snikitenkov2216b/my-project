@@ -2,7 +2,7 @@
 # Код обновлен с добавлением валидации входных данных.
 # Комментарии на русском. Поддержка UTF-8.
 
-from data_models import DataService
+from data_models_extended import DataService
 from config import MOLAR_MASS_CO2
 
 class Category2Calculator:
