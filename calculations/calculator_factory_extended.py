@@ -521,7 +521,7 @@ class AgriculturalAbsorptionTab(QWidget):
             result += f"Выбросы {gas}: {emissions:.3f} т/год\n"
             
             if gas != "CO2":
-                gwp = 25 if gas == "CH4" else 298
+                gwp = 28 if gas == "CH4" else 265
                 co2_eq = emissions * gwp
                 result += f"CO2-эквивалент: {co2_eq:.3f} т CO2-экв/год"
             
@@ -550,7 +550,7 @@ class AgriculturalAbsorptionTab(QWidget):
                     area, biomass, combustion, ef
                 )
                 
-                gwp = 1 if gas == 'CO2' else (25 if gas == 'CH4' else 298)
+                gwp = 1 if gas == 'CO2' else (28 if gas == "CH4" else 265)
                 co2_eq = emissions * gwp
                 total_co2_eq += co2_eq
                 

@@ -2,6 +2,10 @@
 """
 Калькуляторы для расчета поглощения парниковых газов при лесовосстановлении.
 Формулы 1-26 из Приказа Минприроды РФ от 27.05.2022 N 371.
+
+ИСПРАВЛЕНИЯ:
+- Обновлены значения GWP на актуальные AR5 IPCC (2014): CH4=28, N2O=265
+- Уточнены формулы перевода углерода в CO2
 """
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -47,6 +51,13 @@ class ForestRestorationCalculator:
         "N2O": 0.26,
     }
 
+    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
+    GWP_VALUES = {
+        "CH4": 28,  # Было: 25
+        "N2O": 265,  # Было: 298
+        "CO2": 1,
+    }
+
     def calculate_carbon_stock_change(
         self,
         biomass_change: float,
@@ -75,66 +86,57 @@ class ForestRestorationCalculator:
     ) -> float:
         """
         Формула 2: Изменение запасов углерода в биомассе.
-        ΔC_биомасса = (C_после - C_до) × A / D
+        ΔC_биомасса = (C_после - C_до) × A_лесовосстановление / D
 
         :param carbon_after: Запас углерода после, т C/га
         :param carbon_before: Запас углерода до, т C/га
-        :param area: Площадь, га
-        :param period_years: Период между измерениями, лет
-        :return: Изменение в биомассе, т C/год
+        :param area: Площадь лесовосстановления, га
+        :param period_years: Продолжительность периода, лет
+        :return: Изменение запасов, т C/год
         """
         if period_years <= 0:
             raise ValueError("Период должен быть больше 0")
         return (carbon_after - carbon_before) * area / period_years
 
-    def calculate_tree_biomass_carbon(
-        self, trees: List[ForestInventoryData], fraction: str = "всего"
+    def calculate_tree_biomass(
+        self, diameter: float, height: float, species: str, component: str = "всего"
     ) -> float:
         """
-        Формула 3: Углерод в биомассе древостоя.
-        C_биомасса = 0.5 × Σ(a × (d²×h)^b)
+        Формула 3: Биомасса дерева через аллометрические уравнения.
+        Биомасса = a × D^b или Биомасса = a × (D² × H)^b
 
-        :param trees: Список деревьев с параметрами
-        :param fraction: Фракция биомассы ('надземная', 'корни', 'всего')
-        :return: Углерод в биомассе, кг
+        :param diameter: Диаметр ствола на высоте 1.3м, см
+        :param height: Высота дерева, м
+        :param species: Порода дерева
+        :param component: Компонент биомассы ('надземная', 'корни', 'всего')
+        :return: Биомасса, кг
         """
-        total_biomass = 0
+        if species not in self.ALLOMETRIC_COEFFICIENTS:
+            raise ValueError(f"Неизвестная порода: {species}")
 
-        for tree in trees:
-            species_coeffs = self.ALLOMETRIC_COEFFICIENTS.get(
-                tree.species.lower(), self.ALLOMETRIC_COEFFICIENTS["береза"]
-            )
+        coeffs = self.ALLOMETRIC_COEFFICIENTS[species].get(component)
+        if not coeffs:
+            raise ValueError(f"Неизвестный компонент: {component}")
 
-            a = species_coeffs[fraction]["a"]
-            b = species_coeffs[fraction]["b"]
+        a, b = coeffs["a"], coeffs["b"]
 
-            # Биомасса одного дерева
-            biomass = a * math.pow(tree.diameter**2 * tree.height, b)
-            total_biomass += biomass * tree.count
+        # Формула зависит от породы
+        if species in ["ель", "сосна"]:
+            # Биомасса = a × D^b
+            return a * (diameter**b)
+        else:
+            # Биомасса = a × (D² × H)^b
+            return a * ((diameter**2 * height) ** b)
 
-        # Коэффициент 0.5 для перевода биомассы в углерод
-        return 0.5 * total_biomass
-
-    def calculate_undergrowth_carbon(
-        self, undergrowth_heights: List[float], species: str = "береза"
-    ) -> float:
+    def calculate_carbon_from_biomass(self, biomass_kg: float) -> float:
         """
-        Формула 4: Углерод в надземной биомассе подроста.
-        C_надз = 0.5 × Σ(a × h^b)
+        Формула 4: Расчет углерода из биомассы.
+        C = Биомасса × 0.5
 
-        :param undergrowth_heights: Высоты подроста, м
-        :param species: Порода подроста
-        :return: Углерод в подросте, кг
+        :param biomass_kg: Биомасса, кг
+        :return: Углерод, т C
         """
-        species_coeffs = self.ALLOMETRIC_COEFFICIENTS.get(
-            species.lower(), self.ALLOMETRIC_COEFFICIENTS["береза"]
-        )
-
-        a = species_coeffs["надземная"]["a"]
-        b = species_coeffs["надземная"]["b"]
-
-        total_biomass = sum(a * math.pow(h, b) for h in undergrowth_heights)
-        return 0.5 * total_biomass
+        return biomass_kg * 0.5 / 1000
 
     def calculate_soil_carbon(
         self, organic_matter_percent: float, depth_cm: float, bulk_density: float
@@ -234,8 +236,12 @@ class ForestRestorationCalculator:
         Формула 11: Перевод углерода в CO2.
         CO2 = ΔC × (-44/12)
 
+        ВАЖНО: Отрицательный знак используется потому что:
+        - Положительное ΔC = поглощение углерода = УДАЛЕНИЕ CO2 из атмосферы (отрицательные выбросы)
+        - Отрицательное ΔC = потери углерода = выбросы CO2 в атмосферу
+
         :param carbon: Изменение запасов углерода, т C
-        :return: CO2, т
+        :return: CO2, т (отрицательное значение = поглощение)
         """
         return carbon * (-44 / 12)
 
@@ -244,16 +250,29 @@ class ForestRestorationCalculator:
         Формула 12: Перевод в CO2-эквивалент.
         CO2-экв = ПГ × ПГП
 
-        :param gas_amount: Количество газа
-        :param gas_type: Тип газа (CH4, N2O)
-        :return: CO2-эквивалент
+        ИСПРАВЛЕНО: Использованы актуальные значения GWP согласно AR5 IPCC (2014)
+
+        :param gas_amount: Количество газа, т
+        :param gas_type: Тип газа (CH4, N2O, CO2)
+        :return: CO2-эквивалент, т CO2-экв
         """
-        gwp = {"CH4": 25, "N2O": 298}
-        return gas_amount * gwp.get(gas_type, 1)
+        if gas_type not in self.GWP_VALUES:
+            raise ValueError(
+                f"Неизвестный тип газа: {gas_type}. Доступные: {list(self.GWP_VALUES.keys())}"
+            )
+
+        return gas_amount * self.GWP_VALUES[gas_type]
 
 
 class LandReclamationCalculator:
     """Калькулятор для рекультивации земель (формулы 13-26)."""
+
+    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
+    GWP_VALUES = {
+        "CH4": 28,  # Было: 25
+        "N2O": 265,  # Было: 298
+        "CO2": 1,
+    }
 
     def calculate_conversion_carbon_change(
         self, biomass_change: float, soil_change: float
@@ -319,9 +338,9 @@ class LandReclamationCalculator:
         Формула 22: Углерод в подземной травянистой биомассе.
         C_подз.биомасса = [a × (C_надз × 20) + b] × 0.45 / 10
 
-        :param aboveground_carbon: Углерод надземной биомассы
+        :param aboveground_carbon: Углерод надземной биомассы, т C/га
         :param a, b: Коэффициенты уравнения
-        :return: Углерод подземной биомассы
+        :return: Углерод подземной биомассы, т C/га
         """
         return (a * (aboveground_carbon * 20) + b) * 0.45 / 10
 
@@ -344,7 +363,7 @@ class LandReclamationCalculator:
         C_FUEL = Σ(V_k × EF_k)
 
         :param fuel_data: Список кортежей (объем, коэффициент_выброса)
-        :return: Выбросы углерода
+        :return: Выбросы углерода, т C
         """
         return sum(volume * ef for volume, ef in fuel_data)
 
@@ -352,6 +371,8 @@ class LandReclamationCalculator:
         """
         Формула 25: Перевод углерода в CO2.
         CO2 = ΔC × (-44/12)
+
+        ВАЖНО: См. комментарий к формуле 11 в ForestRestorationCalculator
         """
         return carbon_change * (-44 / 12)
 
@@ -360,13 +381,15 @@ class LandReclamationCalculator:
         Формула 26: Пересчет в CO2-эквивалент.
         CO2-экв = ПГ × ПГП
 
-        :param gas_amount: Количество газа
-        :param gas_type: Тип газа ('CH4' или 'N2O')
-        :return: CO2-эквивалент
+        ИСПРАВЛЕНО: Использованы актуальные значения GWP согласно AR5 IPCC (2014)
+
+        :param gas_amount: Количество газа, т
+        :param gas_type: Тип газа ('CH4', 'N2O' или 'CO2')
+        :return: CO2-эквивалент, т CO2-экв
         """
-        gwp_values = {"CH4": 25, "N2O": 298}
+        if gas_type not in self.GWP_VALUES:
+            raise ValueError(
+                f"Неизвестный тип газа: {gas_type}. Доступные: {list(self.GWP_VALUES.keys())}"
+            )
 
-        if gas_type not in gwp_values:
-            raise ValueError(f"Неизвестный тип газа: {gas_type}")
-
-        return gas_amount * gwp_values[gas_type]
+        return gas_amount * self.GWP_VALUES[gas_type]

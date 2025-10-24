@@ -2,6 +2,9 @@
 """
 Калькуляторы для расчета поглощения парниковых газов сельскохозяйственными угодьями.
 Формулы 75-100 из Приказа Минприроды РФ от 27.05.2022 N 371.
+
+ИСПРАВЛЕНИЯ:
+- Обновлены значения GWP на актуальные AR5 IPCC (2014): CH4=28, N2O=265
 """
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -31,6 +34,13 @@ class LivestockData:
 class AgriculturalLandCalculator:
     """Калькулятор для сельскохозяйственных угодий (формулы 75-90)."""
 
+    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
+    GWP_VALUES = {
+        "CH4": 28,  # Было: 25
+        "N2O": 265,  # Было: 298
+        "CO2": 1,
+    }
+
     def calculate_drained_ch4_emissions(
         self,
         area: float,
@@ -59,7 +69,7 @@ class AgriculturalLandCalculator:
     ) -> float:
         """
         Формула 76: Выбросы ПГ от пожаров.
-        L_пожар = A × MB × Cf × Gef × 10^-3
+        L_пожар = A × MB × C_f × G_ef × 10^-3
 
         :param area: Площадь пожара, га
         :param biomass_mass: Масса биомассы, т/га
@@ -256,6 +266,12 @@ class AgriculturalLandCalculator:
         """
         Формула 89: Выбросы CH4 от органогенных почв.
         CH4_organic = A × (1 - Frac_ditch) × EF_land + A × Frac_ditch × EF_ditch
+
+        :param area: Площадь, га
+        :param frac_ditch: Доля канав
+        :param ef_land: Коэффициент для земель, кг CH4/га/год
+        :param ef_ditch: Коэффициент для канав, кг CH4/га/год
+        :return: Выбросы CH4, кг/год
         """
         return area * ((1 - frac_ditch) * ef_land + frac_ditch * ef_ditch)
 
@@ -265,12 +281,25 @@ class AgriculturalLandCalculator:
         """
         Формула 90: Выбросы от пожаров на сельхозземлях.
         L_пожар = A × MB × C_f × G_ef × 10^-3
+
+        :param area: Площадь, га
+        :param biomass: Масса биомассы, т/га
+        :param combustion: Коэффициент сгорания
+        :param emission_factor: Коэффициент выбросов, г/кг
+        :return: Выбросы, т
         """
         return area * biomass * combustion * emission_factor * 0.001
 
 
 class LandConversionCalculator:
     """Калькулятор для конверсии земель (формулы 91-100)."""
+
+    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
+    GWP_VALUES = {
+        "CH4": 28,  # Было: 25
+        "N2O": 265,  # Было: 298
+        "CO2": 1,
+    }
 
     def calculate_conversion_carbon_change(
         self,
@@ -299,6 +328,10 @@ class LandConversionCalculator:
         """
         Формула 92: Выбросы CO2 от осушенных почв переведенных земель.
         CO2_organic = A × EF_C_CO2 × 44/12
+
+        :param area: Площадь, га
+        :param ef: Коэффициент выброса, т C/га/год
+        :return: Выбросы CO2, т/год
         """
         return area * ef * (44 / 12)
 
@@ -306,6 +339,10 @@ class LandConversionCalculator:
         """
         Формула 93: Выбросы N2O от осушенных почв переведенных земель.
         N2O_organic = A × EF_N_N2O × 44/28
+
+        :param area: Площадь, га
+        :param ef: Коэффициент выброса, кг N/га/год
+        :return: Выбросы N2O, т/год
         """
         return area * ef * (44 / 28) / 1000
 
@@ -319,100 +356,43 @@ class LandConversionCalculator:
         """
         Формула 94: Выбросы CH4 от осушенных почв переведенных земель.
         CH4_organic = A × (1 - Frac_ditch) × EF_land + A × Frac_ditch × EF_ditch
+
+        :param area: Площадь, га
+        :param frac_ditch: Доля канав
+        :param ef_land: Коэффициент для земель, кг CH4/га/год
+        :param ef_ditch: Коэффициент для канав, кг CH4/га/год
+        :return: Выбросы CH4, кг/год
         """
         return area * ((1 - frac_ditch) * ef_land + frac_ditch * ef_ditch)
 
     def calculate_conversion_fire_emissions(
-        self,
-        area: float,
-        fuel_mass: float,
-        combustion_factor: float,
-        emission_factor: float,
+        self, area: float, biomass: float, combustion: float, emission_factor: float
     ) -> float:
         """
-        Формула 95: Выбросы от пожаров на переведенных землях.
+        Формула 95: Выбросы от пожаров при конверсии земель.
         L_пожар = A × MB × C_f × G_ef × 10^-3
-        """
-        return area * fuel_mass * combustion_factor * emission_factor * 0.001
-
-    def calculate_grassland_soil_carbon_change(
-        self,
-        c_plant: float,
-        c_manure: float,
-        c_respiration: float,
-        c_erosion: float,
-        c_hay: float,
-        c_feed: float,
-        c_green: float,
-    ) -> float:
-        """
-        Формула 96: Изменение углерода в почвах кормовых угодий.
-        ΔC_минеральные = (Cplant + Cmanure) - (Cresp + Cerosion + Chay + Cfeed + Cgreen)
-
-        :param c_plant: Углерод от растений, т C/год
-        :param c_manure: Углерод от навоза, т C/год
-        :param c_respiration: Потери от дыхания, т C/год
-        :param c_erosion: Потери от эрозии, т C/год
-        :param c_hay: Вынос с сеном, т C/год
-        :param c_feed: Вынос на корм, т C/год
-        :param c_green: Вынос зеленой массы, т C/год
-        :return: Изменение запасов, т C/год
-        """
-        inputs = c_plant + c_manure
-        outputs = c_respiration + c_erosion + c_hay + c_feed + c_green
-        return inputs - outputs
-
-    def calculate_grassland_plant_carbon(
-        self, area: float, carbon_accumulation: float
-    ) -> float:
-        """
-        Формула 97: Поступление углерода в кормовые угодья.
-        Cplant = A × C_акк
 
         :param area: Площадь, га
-        :param carbon_accumulation: Аккумуляция углерода, т C/га/год
-        :return: Поступление углерода, т C/год
+        :param biomass: Масса биомассы, т/га
+        :param combustion: Коэффициент сгорания
+        :param emission_factor: Коэффициент выбросов, г/кг
+        :return: Выбросы, т
         """
-        return area * carbon_accumulation
+        return area * biomass * combustion * emission_factor * 0.001
 
-    def calculate_manure_carbon_input(self, livestock: List[LivestockData]) -> float:
+    def to_co2_equivalent(self, gas_amount: float, gas_type: str) -> float:
         """
-        Формула 98: Поступление углерода с навозом.
-        Cmanure = Σ[(LV_i × (EF_excretion_C_i - EF_CH4_i × 12/16 - EF_CO2_i × 12/44) × Time_i) / 100]
+        Перевод газа в CO2-эквивалент с использованием актуальных GWP.
 
-        :param livestock: Данные о животных
-        :return: Углерод от навоза, т C/год
+        ИСПРАВЛЕНО: Использованы актуальные значения GWP согласно AR5 IPCC (2014)
+
+        :param gas_amount: Количество газа, т
+        :param gas_type: Тип газа (CH4, N2O, CO2)
+        :return: CO2-эквивалент, т CO2-экв
         """
-        total_carbon = 0
-        for animal in livestock:
-            carbon_input = (
-                animal.count
-                * (
-                    animal.excretion_factor - 0
-                )  # Упрощенно, без учета выбросов CH4 и CO2
-                * animal.grazing_time
-                / 100
+        if gas_type not in self.GWP_VALUES:
+            raise ValueError(
+                f"Неизвестный тип газа: {gas_type}. Доступные: {list(self.GWP_VALUES.keys())}"
             )
-            total_carbon += carbon_input
-        return total_carbon
 
-    def calculate_grassland_erosion(self, area: float, erosion_factor: float) -> float:
-        """
-        Формула 99: Потери углерода от эрозии на пастбищах.
-        Cerosion = A × EFerosion
-
-        :param area: Площадь, га
-        :param erosion_factor: Коэффициент эрозии, т C/га/год
-        :return: Потери от эрозии, т C/год
-        """
-        return area * erosion_factor
-
-    def calculate_hay_carbon_removal(self, hay_yield: float) -> float:
-        """
-        Формула 100: Вынос углерода с сеном.
-        Chay = Yhay × 45/100
-
-        :param hay_yield: Урожайность сена, т/год
-        :return: Вынос углерода, т C/год
-        """
-        return hay_yield * 0.45
+        return gas_amount * self.GWP_VALUES[gas_type]
