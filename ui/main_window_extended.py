@@ -1,6 +1,7 @@
 # ui/main_window_extended.py
 """
 Расширенное главное окно приложения с поддержкой расчетов поглощения ПГ.
+Оптимизированная версия с ленивой загрузкой вкладок.
 """
 import logging
 from PyQt6.QtWidgets import (
@@ -11,48 +12,16 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QIcon, QKeySequence
 
-# Импорт существующих вкладок выбросов
-from ui.category_0_tab import Category0Tab
-from ui.category_1_tab import Category1Tab
-from ui.category_2_tab import Category2Tab
-from ui.category_3_tab import Category3Tab
-from ui.category_4_tab import Category4Tab
-from ui.category_5_tab import Category5Tab
-from ui.category_6_tab import Category6Tab
-from ui.category_7_tab import Category7Tab
-from ui.category_8_tab import Category8Tab
-from ui.category_9_tab import Category9Tab
-from ui.category_10_tab import Category10Tab
-from ui.category_11_tab import Category11Tab
-from ui.category_12_tab import Category12Tab
-from ui.category_13_tab import Category13Tab
-from ui.category_14_tab import Category14Tab
-from ui.category_15_tab import Category15Tab
-from ui.category_16_tab import Category16Tab
-from ui.category_17_tab import Category17Tab
-from ui.category_18_tab import Category18Tab
-from ui.category_19_tab import Category19Tab
-from ui.category_20_tab import Category20Tab
-from ui.category_21_tab import Category21Tab
-from ui.category_22_tab import Category22Tab
-from ui.category_23_tab import Category23Tab
-from ui.category_24_tab import Category24Tab
-
-# ИЗМЕНЕНИЕ: Импорт ВСЕХ вкладок поглощения из absorption_tabs.py
-from ui.absorption_tabs import (
-    ForestRestorationTab,
-    AgriculturalAbsorptionTab,
-    PermanentForestTab,       # <--- Новая
-    ProtectiveForestTab,      # <--- Новая
-    LandReclamationTab,       # <--- Новая
-    LandConversionTab,        # <--- Новая
-    AbsorptionSummaryTab      # <--- Новая
+# Импорт конфигурации для динамической загрузки вкладок
+from ui.tab_config import (
+    EMISSION_TABS_CONFIG,
+    ABSORPTION_TABS_CONFIG,
+    get_emission_tab_class,
+    get_absorption_tab_class
 )
 
 # Импорт расширенной фабрики калькуляторов
 from calculations.calculator_factory_extended import ExtendedCalculatorFactory
-# Импорт сервиса данных для передачи в absorption_tabs
-from data_models_extended import ExtendedDataService
 
 
 class ExtendedMainWindow(QMainWindow):
@@ -99,169 +68,71 @@ class ExtendedMainWindow(QMainWindow):
         main_layout.addWidget(self.main_tabs)
 
     def _init_emission_tabs(self):
-        """Инициализация вкладок расчета выбросов."""
-        # ... (код этой функции остается БЕЗ ИЗМЕНЕНИЙ) ...
-        # Топливо и энергетика
-        self.emissions_tabs.addTab(
-            Category0Tab(self.calculator_factory.get_calculator("Category0")),
-            "0️⃣ Расход ресурсов"
-        )
-        self.emissions_tabs.addTab(
-            Category1Tab(self.calculator_factory.get_calculator("Category1")),
-            "1️⃣ Стац. сжигание"
-        )
-        self.emissions_tabs.addTab(
-            Category2Tab(self.calculator_factory.get_calculator("Category2")),
-            "2️⃣ Факелы"
-        )
-        self.emissions_tabs.addTab(
-            Category3Tab(self.calculator_factory.get_calculator("Category3")),
-            "3️⃣ Фугитивные"
-        )
-        # Промышленные процессы
-        self.emissions_tabs.addTab(
-            Category4Tab(self.calculator_factory.get_calculator("Category4")),
-            "4️⃣ Нефтепереработка"
-        )
-        self.emissions_tabs.addTab(
-            Category5Tab(self.calculator_factory.get_calculator("Category5")),
-            "5️⃣ Производство кокса"
-        )
-        self.emissions_tabs.addTab(
-            Category6Tab(self.calculator_factory.get_calculator("Category6")),
-            "6️⃣ Цемент"
-        )
-        self.emissions_tabs.addTab(
-            Category7Tab(self.calculator_factory.get_calculator("Category7")),
-            "7️⃣ Известь"
-        )
-        self.emissions_tabs.addTab(
-            Category8Tab(self.calculator_factory.get_calculator("Category8")),
-            "8️⃣ Стекло"
-        )
-        self.emissions_tabs.addTab(
-            Category9Tab(self.calculator_factory.get_calculator("Category9")),
-            "9️⃣ Керамика"
-        )
-        # Химическая промышленность
-        self.emissions_tabs.addTab(
-            Category10Tab(self.calculator_factory.get_calculator("Category10")),
-            "🔟 Аммиак"
-        )
-        self.emissions_tabs.addTab(
-            Category11Tab(self.calculator_factory.get_calculator("Category11")),
-            "1️⃣1️⃣ Хим. N2O"
-        )
-        self.emissions_tabs.addTab(
-            Category12Tab(self.calculator_factory.get_calculator("Category12")),
-            "1️⃣2️⃣ Нефтехимия"
-        )
-        self.emissions_tabs.addTab(
-            Category13Tab(self.calculator_factory.get_calculator("Category13")),
-            "1️⃣3️⃣ Фторсодержащие"
-        )
-        # Металлургия
-        self.emissions_tabs.addTab(
-            Category14Tab(self.calculator_factory.get_calculator("Category14")),
-            "1️⃣4️⃣ Черная металлургия"
-        )
-        self.emissions_tabs.addTab(
-            Category15Tab(self.calculator_factory.get_calculator("Category15")),
-            "1️⃣5️⃣ Ферросплавы"
-        )
-        self.emissions_tabs.addTab(
-            Category16Tab(self.calculator_factory.get_calculator("Category16")),
-            "1️⃣6️⃣ Алюминий"
-        )
-        self.emissions_tabs.addTab(
-            Category17Tab(self.calculator_factory.get_calculator("Category17")),
-            "1️⃣7️⃣ Прочие процессы"
-        )
-        # Транспорт и инфраструктура
-        self.emissions_tabs.addTab(
-            Category18Tab(self.calculator_factory.get_calculator("Category18")),
-            "1️⃣8️⃣ Транспорт"
-        )
-        self.emissions_tabs.addTab(
-            Category19Tab(self.calculator_factory.get_calculator("Category19")),
-            "1️⃣9️⃣ Дор. хозяйство"
-        )
-        # Отходы
-        self.emissions_tabs.addTab(
-            Category20Tab(self.calculator_factory.get_calculator("Category20")),
-            "2️⃣0️⃣ Захоронение отходов"
-        )
-        self.emissions_tabs.addTab(
-            Category21Tab(self.calculator_factory.get_calculator("Category21")),
-            "2️⃣1️⃣ Био. переработка"
-        )
-        self.emissions_tabs.addTab(
-            Category22Tab(self.calculator_factory.get_calculator("Category22")),
-            "2️⃣2️⃣ Сжигание отходов"
-        )
-        self.emissions_tabs.addTab(
-            Category23Tab(self.calculator_factory.get_calculator("Category23")),
-            "2️⃣3️⃣ Сточные воды"
-        )
-        self.emissions_tabs.addTab(
-            Category24Tab(self.calculator_factory.get_calculator("Category24")),
-            "2️⃣4️⃣ N2O из стоков"
-        )
+        """
+        Инициализация вкладок расчета выбросов.
+        Использует динамическую загрузку из tab_config.py
+        """
+        for category_num, tab_title in EMISSION_TABS_CONFIG:
+            try:
+                # Динамически загружаем класс вкладки
+                tab_class = get_emission_tab_class(category_num)
+                if tab_class:
+                    # Получаем калькулятор
+                    calculator = self.calculator_factory.get_calculator(f"Category{category_num}")
+                    if calculator:
+                        # Создаем и добавляем вкладку
+                        tab_widget = tab_class(calculator)
+                        self.emissions_tabs.addTab(tab_widget, tab_title)
+                    else:
+                        logging.warning(f"Калькулятор для Category{category_num} не найден")
+                else:
+                    logging.warning(f"Класс вкладки для Category{category_num} не найден")
+            except Exception as e:
+                logging.error(f"Ошибка при создании вкладки Category{category_num}: {e}", exc_info=True)
 
 
     def _init_absorption_tabs(self):
-        """Инициализация вкладок расчета поглощения."""
-
+        """
+        Инициализация вкладок расчета поглощения.
+        Использует динамическую загрузку из tab_config.py
+        """
         # Получаем сервис данных один раз
         extended_data_service = self.calculator_factory.get_extended_data_service()
 
-        # Лесовосстановление и лесоразведение
-        forest_restoration_calc = self.calculator_factory.get_absorption_calculator("ForestRestoration")
-        self.absorption_tabs.addTab(
-            ForestRestorationTab(forest_restoration_calc), # Data service не нужен здесь
-            "🌱 Лесовосстановление"
-        )
+        for calc_type, tab_title, module_name, class_name in ABSORPTION_TABS_CONFIG:
+            try:
+                # Динамически загружаем класс вкладки
+                tab_class = get_absorption_tab_class(module_name, class_name)
+                if tab_class:
+                    # Получаем калькулятор
+                    calculator = self.calculator_factory.get_absorption_calculator(calc_type)
+                    if calculator:
+                        # Создаем вкладку (некоторым нужен extended_data_service)
+                        try:
+                            # Пробуем создать с сервисом данных
+                            tab_widget = tab_class(calculator, extended_data_service)
+                        except TypeError:
+                            # Если не требуется сервис данных
+                            tab_widget = tab_class(calculator)
 
-        # Постоянные лесные земли - ИЗМЕНЕНИЕ: Используем новый класс вкладки
-        permanent_forest_calc = self.calculator_factory.get_absorption_calculator("PermanentForest")
-        self.absorption_tabs.addTab(
-            PermanentForestTab(permanent_forest_calc, extended_data_service), # <--- Передаем сервис
-            "🌲 Постоянные леса"
-        )
+                        self.absorption_tabs.addTab(tab_widget, tab_title)
+                    else:
+                        logging.warning(f"Калькулятор для {calc_type} не найден")
+                else:
+                    logging.warning(f"Класс вкладки {class_name} из {module_name} не найден")
+            except Exception as e:
+                logging.error(f"Ошибка при создании вкладки {calc_type}: {e}", exc_info=True)
 
-        # Защитные насаждения - ИЗМЕНЕНИЕ: Используем новый класс вкладки
-        protective_forest_calc = self.calculator_factory.get_absorption_calculator("ProtectiveForest")
-        self.absorption_tabs.addTab(
-            ProtectiveForestTab(protective_forest_calc, extended_data_service), # <--- Передаем сервис
-            "🌳 Защитные насаждения"
-        )
-
-        # Сельскохозяйственные угодья
-        agricultural_calc = self.calculator_factory.get_absorption_calculator("AgriculturalLand")
-        self.absorption_tabs.addTab(
-            AgriculturalAbsorptionTab(agricultural_calc, extended_data_service), # <-- Передаем сервис
-            "🌾 Сельхозугодья"
-        )
-
-        # Рекультивация земель - ИЗМЕНЕНИЕ: Используем новый класс вкладки
-        reclamation_calc = self.calculator_factory.get_absorption_calculator("LandReclamation")
-        self.absorption_tabs.addTab(
-            LandReclamationTab(reclamation_calc, extended_data_service), # <--- Передаем сервис
-            "♻️ Рекультивация"
-        )
-
-        # Конверсия земель - ИЗМЕНЕНИЕ: Используем новый класс вкладки
-        conversion_calc = self.calculator_factory.get_absorption_calculator("LandConversion")
-        self.absorption_tabs.addTab(
-            LandConversionTab(conversion_calc, extended_data_service), # <--- Передаем сервис
-            "🔄 Конверсия земель"
-        )
-
-        # Сводный расчет - ИЗМЕНЕНИЕ: Используем новый класс вкладки
-        self.absorption_tabs.addTab(
-            AbsorptionSummaryTab(self.calculator_factory), # Передаем всю фабрику
-            "📈 Сводный расчет"
-        )
+        # Добавляем сводную вкладку (требует всю фабрику, а не отдельный калькулятор)
+        try:
+            summary_class = get_absorption_tab_class("ui.absorption_tabs", "AbsorptionSummaryTab")
+            if summary_class:
+                self.absorption_tabs.addTab(
+                    summary_class(self.calculator_factory),
+                    "📈 Сводный расчет"
+                )
+        except Exception as e:
+            logging.error(f"Ошибка при создании сводной вкладки: {e}", exc_info=True)
 
     # --- Остальные методы (_init_menu, _init_toolbar, _init_statusbar и т.д.) остаются БЕЗ ИЗМЕНЕНИЙ ---
     # (Скопируйте их из предыдущего ответа, если нужно)
@@ -379,9 +250,24 @@ class ExtendedMainWindow(QMainWindow):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
-            # TODO: Очистка всех полей
+            # FIX: Реализована очистка всех полей
+            self._clear_all_fields()
             logging.info("Starting new calculation")
             self.status_label.setText("Новый расчет начат")
+
+    def _clear_all_fields(self):
+        """Очистка всех полей ввода во всех вкладках."""
+        # Очистка вкладок выбросов
+        for i in range(self.emissions_tabs.count()):
+            tab = self.emissions_tabs.widget(i)
+            if hasattr(tab, 'clear_fields'):
+                tab.clear_fields()
+        # Очистка вкладок поглощения
+        for i in range(self.absorption_tabs.count()):
+            tab = self.absorption_tabs.widget(i)
+            if hasattr(tab, 'clear_fields'):
+                tab.clear_fields()
+        logging.info("All fields cleared")
 
     def _open_project(self):
         """Открыть сохраненный проект."""

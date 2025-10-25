@@ -5,10 +5,14 @@
 
 ИСПРАВЛЕНИЯ:
 - Обновлены значения GWP на актуальные AR5 IPCC (2014): CH4=28, N2O=265
+- Используются централизованные константы из config.py и gwp_constants.py
 """
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import math
+
+from config import CARBON_TO_CO2_FACTOR
+from calculations.gwp_constants import GWP_AR5_100Y
 
 
 @dataclass
@@ -34,12 +38,8 @@ class LivestockData:
 class AgriculturalLandCalculator:
     """Калькулятор для сельскохозяйственных угодий (формулы 75-90)."""
 
-    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
-    GWP_VALUES = {
-        "CH4": 28,  # Было: 25
-        "N2O": 265,  # Было: 298
-        "CO2": 1,
-    }
+    # Используем централизованные значения GWP из gwp_constants.py
+    GWP_VALUES = GWP_AR5_100Y
 
     def calculate_drained_ch4_emissions(
         self,
@@ -237,13 +237,13 @@ class AgriculturalLandCalculator:
     def calculate_organic_soil_co2(self, area: float, ef: float = 5.9) -> float:
         """
         Формула 87: Выбросы CO2 от органогенных почв.
-        CO2_organic = A × EF_C_CO2 × 44/12
+        CO2_organic = A × EF_C_CO2 × CARBON_TO_CO2_FACTOR
 
         :param area: Площадь, га
         :param ef: Коэффициент выброса, т C/га/год
         :return: Выбросы CO2, т/год
         """
-        return area * ef * (44 / 12)
+        return area * ef * CARBON_TO_CO2_FACTOR
 
     def calculate_organic_soil_n2o(self, area: float, ef: float = 7.0) -> float:
         """
@@ -294,12 +294,8 @@ class AgriculturalLandCalculator:
 class LandConversionCalculator:
     """Калькулятор для конверсии земель (формулы 91-100)."""
 
-    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
-    GWP_VALUES = {
-        "CH4": 28,  # Было: 25
-        "N2O": 265,  # Было: 298
-        "CO2": 1,
-    }
+    # Используем централизованные значения GWP из gwp_constants.py
+    GWP_VALUES = GWP_AR5_100Y
 
     def calculate_conversion_carbon_change(
         self,
@@ -327,13 +323,13 @@ class LandConversionCalculator:
     def calculate_converted_land_co2(self, area: float, ef: float = 5.9) -> float:
         """
         Формула 92: Выбросы CO2 от осушенных почв переведенных земель.
-        CO2_organic = A × EF_C_CO2 × 44/12
+        CO2_organic = A × EF_C_CO2 × CARBON_TO_CO2_FACTOR
 
         :param area: Площадь, га
         :param ef: Коэффициент выброса, т C/га/год
         :return: Выбросы CO2, т/год
         """
-        return area * ef * (44 / 12)
+        return area * ef * CARBON_TO_CO2_FACTOR
 
     def calculate_converted_land_n2o(self, area: float, ef: float = 7.0) -> float:
         """

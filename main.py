@@ -1,20 +1,25 @@
 # main.py
 import sys
 import os
+import logging
 
+# Настройка пути проекта
 project_root = os.path.dirname(os.path.abspath(__file__))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-import logging
+
 from PyQt6.QtWidgets import QApplication
-from ui.main_window_extended import ExtendedMainWindow  # Используем расширенное окно
+from ui.main_window_extended import ExtendedMainWindow
 from paths import LOG_FILE
 
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8"), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+        logging.StreamHandler()
+    ],
 )
 
 

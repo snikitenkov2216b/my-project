@@ -10,5 +10,9 @@ matplotlib==3.8.2
 latex2sympy2==1.9.1
 antlr4-python3-runtime==4.11
 
+# Тестирование
+pytest==7.4.3
+pytest-cov==4.1.0
+
 #Установка
 #pip install -r requirements.txt

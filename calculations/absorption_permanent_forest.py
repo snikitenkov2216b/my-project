@@ -2,10 +2,15 @@
 """
 Калькуляторы для расчета поглощения парниковых газов постоянными лесными землями.
 Формулы 27-74 из Приказа Минприроды РФ от 27.05.2022 N 371.
+
+ИСПРАВЛЕНИЯ:
+- Используются централизованные константы из config.py
 """
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 import math
+
+from config import CARBON_TO_CO2_FACTOR
 
 
 @dataclass
@@ -271,13 +276,13 @@ class PermanentForestCalculator:
     def calculate_drained_forest_co2(self, area: float, ef: float = 0.71) -> float:
         """
         Формула 56: Выбросы CO2 от осушения лесных почв.
-        CO2_organic = A × EF × 44/12
+        CO2_organic = A × EF × CARBON_TO_CO2_FACTOR
 
         :param area: Площадь осушенных почв, га
         :param ef: Коэффициент выброса, т C/га/год
         :return: Выбросы CO2, т/год
         """
-        return area * ef * (44 / 12)
+        return area * ef * CARBON_TO_CO2_FACTOR
 
     def calculate_drained_forest_n2o(self, area: float, ef: float = 1.71) -> float:
         """
@@ -453,9 +458,9 @@ class ProtectiveForestCalculator:
     def calculate_converted_land_co2(self, area: float, ef: float = 0.71) -> float:
         """
         Формула 73: Выбросы CO2 от осушенных почв переведенных земель.
-        CO2_organic = A × EF × 44/12
+        CO2_organic = A × EF × CARBON_TO_CO2_FACTOR
         """
-        return area * ef * (44 / 12)
+        return area * ef * CARBON_TO_CO2_FACTOR
 
     def calculate_converted_land_n2o(self, area: float, ef: float = 1.71) -> float:
         """

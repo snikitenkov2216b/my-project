@@ -6,10 +6,14 @@
 ИСПРАВЛЕНИЯ:
 - Обновлены значения GWP на актуальные AR5 IPCC (2014): CH4=28, N2O=265
 - Уточнены формулы перевода углерода в CO2
+- Используются централизованные константы из config.py и gwp_constants.py
 """
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import math
+
+from config import CARBON_TO_CO2_FACTOR, N2O_N_TO_N2O_FACTOR
+from calculations.gwp_constants import GWP_AR5_100Y
 
 
 @dataclass
@@ -24,6 +28,9 @@ class ForestInventoryData:
 
 class ForestRestorationCalculator:
     """Калькулятор поглощения ПГ при лесовосстановлении (формулы 1-12)."""
+
+    # Используем централизованные значения GWP из gwp_constants.py
+    GWP_VALUES = GWP_AR5_100Y
 
     # Коэффициенты аллометрических уравнений (Таблица 24)
     ALLOMETRIC_COEFFICIENTS = {
@@ -49,13 +56,6 @@ class ForestRestorationCalculator:
         "CO2": 1569,  # г/кг сжигаемого вещества
         "CH4": 4.7,
         "N2O": 0.26,
-    }
-
-    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
-    GWP_VALUES = {
-        "CH4": 28,  # Было: 25
-        "N2O": 265,  # Было: 298
-        "CO2": 1,
     }
 
     def calculate_carbon_stock_change(
@@ -177,24 +177,24 @@ class ForestRestorationCalculator:
     def calculate_drained_soil_co2(self, area: float, ef: float = 0.71) -> float:
         """
         Формула 7: Выбросы CO2 от осушенных почв.
-        CO2_organic = A × EF × 44/12
+        CO2_organic = A × EF × CARBON_TO_CO2_FACTOR
 
         :param area: Площадь осушенных почв, га
         :param ef: Коэффициент выброса, т C/га/год (по умолчанию 0.71)
         :return: Выбросы CO2, т/год
         """
-        return area * ef * (44 / 12)
+        return area * ef * CARBON_TO_CO2_FACTOR
 
     def calculate_drained_soil_n2o(self, area: float, ef: float = 1.71) -> float:
         """
         Формула 8: Выбросы N2O от осушенных почв.
-        N2O_organic = A × EF × 44/28
+        N2O_organic = A × EF × N2O_N_TO_N2O_FACTOR
 
         :param area: Площадь осушенных почв, га
         :param ef: Коэффициент выброса N2O, кг N/га/год
         :return: Выбросы N2O, т/год
         """
-        return area * ef * (44 / 28) / 1000
+        return area * ef * N2O_N_TO_N2O_FACTOR / 1000
 
     def calculate_drained_soil_ch4(
         self,
@@ -234,7 +234,7 @@ class ForestRestorationCalculator:
     def carbon_to_co2(self, carbon: float) -> float:
         """
         Формула 11: Перевод углерода в CO2.
-        CO2 = ΔC × (-44/12)
+        CO2 = ΔC × (-CARBON_TO_CO2_FACTOR)
 
         ВАЖНО: Отрицательный знак используется потому что:
         - Положительное ΔC = поглощение углерода = УДАЛЕНИЕ CO2 из атмосферы (отрицательные выбросы)
@@ -243,7 +243,7 @@ class ForestRestorationCalculator:
         :param carbon: Изменение запасов углерода, т C
         :return: CO2, т (отрицательное значение = поглощение)
         """
-        return carbon * (-44 / 12)
+        return carbon * (-CARBON_TO_CO2_FACTOR)
 
     def to_co2_equivalent(self, gas_amount: float, gas_type: str) -> float:
         """
@@ -267,12 +267,8 @@ class ForestRestorationCalculator:
 class LandReclamationCalculator:
     """Калькулятор для рекультивации земель (формулы 13-26)."""
 
-    # ИСПРАВЛЕНО: Актуальные значения GWP согласно AR5 IPCC (2014)
-    GWP_VALUES = {
-        "CH4": 28,  # Было: 25
-        "N2O": 265,  # Было: 298
-        "CO2": 1,
-    }
+    # Используем централизованные значения GWP из gwp_constants.py
+    GWP_VALUES = GWP_AR5_100Y
 
     def calculate_conversion_carbon_change(
         self, biomass_change: float, soil_change: float
@@ -370,11 +366,11 @@ class LandReclamationCalculator:
     def carbon_to_co2_conversion(self, carbon_change: float) -> float:
         """
         Формула 25: Перевод углерода в CO2.
-        CO2 = ΔC × (-44/12)
+        CO2 = ΔC × (-CARBON_TO_CO2_FACTOR)
 
         ВАЖНО: См. комментарий к формуле 11 в ForestRestorationCalculator
         """
-        return carbon_change * (-44 / 12)
+        return carbon_change * (-CARBON_TO_CO2_FACTOR)
 
     def ghg_to_co2_equivalent(self, gas_amount: float, gas_type: str) -> float:
         """

@@ -25,8 +25,10 @@ GWP_AR5_100Y = {
 GWP_VALUES = GWP_AR5_100Y
 
 # Коэффициенты перевода масс
-CARBON_TO_CO2_RATIO = 44 / 12  # Молярная масса CO2 / масса C
-NITROGEN_TO_N2O_RATIO = 44 / 28  # Молярная масса N2O / масса N2
+# FIX: Используем точные молярные массы из config.py для единообразия
+from config import CARBON_TO_CO2_FACTOR, N2O_N_TO_N2O_FACTOR
+CARBON_TO_CO2_RATIO = CARBON_TO_CO2_FACTOR  # 44.011 / 12.011 = 3.66439...
+NITROGEN_TO_N2O_RATIO = N2O_N_TO_N2O_FACTOR  # 44.013 / 28.014 = 1.57129...
 
 # Справочная информация
 GWP_INFO = {

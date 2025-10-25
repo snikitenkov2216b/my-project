@@ -49,7 +49,8 @@ class FormulaLibraryDialog(QDialog):
                 for formula_data in library:
                     self.formula_list.addItem(formula_data['name'])
         except (FileNotFoundError, json.JSONDecodeError):
-            # Файл еще не создан или пуст, это нормально
+            # FIX: Файл еще не создан или пуст - это нормально для первого запуска
+            # Библиотека будет создана при первом сохранении формулы
             pass
 
     def _save_library(self, library):
@@ -76,7 +77,10 @@ class FormulaLibraryDialog(QDialog):
                 self._save_library(library)
                 self._load_formulas_to_list() # Обновляем список
             except FileNotFoundError:
-                pass # Нечего удалять
+                # FIX: Файл библиотеки не существует - нечего удалять
+                QMessageBox.warning(self, "Ошибка",
+                                  "Библиотека формул не найдена. Возможно, она ещё не была создана.")
+                pass
 
     def accept(self):
         current_item = self.formula_list.currentItem()

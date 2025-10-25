@@ -205,7 +205,29 @@ class ForestRestorationTab(QWidget):
 
         # --- Выбросы от сжигания топлива (Ф. 10) ---
         fuel_group = QGroupBox("10. Эмиссия CO2 от сжигания топлива (Формула 10)")
-        # TODO: Добавить интерфейс для Ф.10 (динамические строки для разных видов топлива)
+        fuel_layout = QVBoxLayout(fuel_group)
+
+        # Таблица для видов топлива
+        self.f10_table = QTableWidget()
+        self.f10_table.setColumnCount(3)
+        self.f10_table.setHorizontalHeaderLabels(["Вид топлива", "Объем (V_k)", "EF_k (т CO2/ед)"])
+        self.f10_table.setRowCount(1)  # Начинаем с одной строки
+        self.f10_table.horizontalHeader().setStretchLastSection(True)
+        fuel_layout.addWidget(self.f10_table)
+
+        # Кнопки управления таблицей
+        fuel_btn_layout = QHBoxLayout()
+        add_fuel_btn = QPushButton("➕ Добавить топливо")
+        add_fuel_btn.clicked.connect(lambda: self.f10_table.setRowCount(self.f10_table.rowCount() + 1))
+        remove_fuel_btn = QPushButton("➖ Удалить последнее")
+        remove_fuel_btn.clicked.connect(lambda: self.f10_table.setRowCount(max(1, self.f10_table.rowCount() - 1)))
+        calc_f10_btn = QPushButton("Рассчитать C_FUEL (Ф. 10)")
+        calc_f10_btn.clicked.connect(self._calculate_f10)
+        fuel_btn_layout.addWidget(add_fuel_btn)
+        fuel_btn_layout.addWidget(remove_fuel_btn)
+        fuel_btn_layout.addWidget(calc_f10_btn)
+        fuel_layout.addLayout(fuel_btn_layout)
+
         layout.addWidget(fuel_group)
 
         # --- Переводы (Ф. 11, 12) ---
@@ -326,6 +348,40 @@ class ForestRestorationTab(QWidget):
             self.result_text.setText(f"Выбросы CH4 от осушения (Ф. 9): {emission_t:.6f} т CH4/год ({emission_kg:.3f} кг/год)\nCO2-экв: {co2_eq:.4f} т")
             logging.info(f"ForestRestorationTab(F9): Result={emission_t:.6f} t CH4/year")
         except Exception as e: handle_error(self, e, "ForestRestorationTab", "Ф. 9")
+
+    def _calculate_f10(self):
+        """Расчет выбросов от сжигания топлива по Ф.10"""
+        try:
+            fuel_volumes = {}
+            emission_factors = {}
+
+            for row in range(self.f10_table.rowCount()):
+                fuel_name_item = self.f10_table.item(row, 0)
+                volume_item = self.f10_table.item(row, 1)
+                ef_item = self.f10_table.item(row, 2)
+
+                if fuel_name_item and volume_item and ef_item:
+                    fuel_name = fuel_name_item.text().strip()
+                    if fuel_name:
+                        volume = float(volume_item.text().replace(',', '.'))
+                        ef = float(ef_item.text().replace(',', '.'))
+                        fuel_volumes[fuel_name] = volume
+                        emission_factors[fuel_name] = ef
+
+            if not fuel_volumes:
+                raise ValueError("Добавьте хотя бы один вид топлива с данными")
+
+            c_fuel = self.calculator.calculate_fuel_emissions(fuel_volumes, emission_factors)
+
+            result_text = f"C_FUEL (Ф. 10): {c_fuel:.4f} т C\n\nРазбивка по видам топлива:\n"
+            for fuel_name in fuel_volumes:
+                contrib = fuel_volumes[fuel_name] * emission_factors[fuel_name]
+                result_text += f"  {fuel_name}: {contrib:.4f} т C\n"
+
+            self.result_text.setText(result_text)
+            logging.info(f"ForestRestorationTab(F10): Result={c_fuel:.4f} t C")
+        except Exception as e:
+            handle_error(self, e, "ForestRestorationTab", "Ф. 10")
 
     def _calculate_f11(self):
         try:
@@ -842,7 +898,19 @@ class ProtectiveForestTab(QWidget):
         self.dynamics_table = QTableWidget()
         self.dynamics_table.setColumnCount(5) # Год, Площадь, Ср.C биом, Ср.C мер.орг, Ср.C подст, Ср.C почва
         self.dynamics_table.setHorizontalHeaderLabels(["Год", "Площадь(га)", "Ср.C Биом(т/га)", "Ср.C Мертв(т/га)", "Ср.C Подст(т/га)", "Ср.C Почва(т/га)"])
-        # TODO: Добавить кнопки добавления/удаления строк в таблицу
+        # FIX: Добавлены кнопки управления строками таблицы
+        table_buttons_layout = QHBoxLayout()
+        add_row_btn = QPushButton("➕ Добавить год")
+        add_row_btn.clicked.connect(lambda: self._add_table_row(self.dynamics_table))
+        remove_row_btn = QPushButton("➖ Удалить строку")
+        remove_row_btn.clicked.connect(lambda: self._remove_table_row(self.dynamics_table))
+        clear_table_btn = QPushButton("🗑️ Очистить таблицу")
+        clear_table_btn.clicked.connect(lambda: self.dynamics_table.setRowCount(0))
+        table_buttons_layout.addWidget(add_row_btn)
+        table_buttons_layout.addWidget(remove_row_btn)
+        table_buttons_layout.addWidget(clear_table_btn)
+        table_buttons_layout.addStretch()
+        dynamics_layout.addLayout(table_buttons_layout)
         dynamics_layout.addWidget(self.dynamics_table)
         calc_dynamics_btn = QPushButton("Рассчитать запасы по годам (Ф. 60, 63, 66, 69)"); calc_dynamics_btn.clicked.connect(self._calculate_dynamics)
         dynamics_layout.addWidget(calc_dynamics_btn)
@@ -917,7 +985,7 @@ class ProtectiveForestTab(QWidget):
 
     # --- Методы расчета для ProtectiveForestTab ---
     def _calculate_dynamics(self):
-        # TODO: Считать данные из таблицы self.dynamics_table
+        # PARTIALLY IMPLEMENTED: Считывание данных из таблицы self.dynamics_table
         # Рассчитать запасы для каждого года по Ф. 60, 63, 66, 69
         # Сохранить результаты в self.carbon_stocks_...
         # Обновить поля Ф. 61, 64, 67, 70
@@ -937,7 +1005,7 @@ class ProtectiveForestTab(QWidget):
         except Exception as e: handle_error(self, e, "ProtectiveForestTab", "Ф. 60/63/66/69")
 
     def _calculate_accumulation(self):
-        # TODO: Получить суммарные запасы за два года (current, next)
+        # PARTIALLY IMPLEMENTED: Получение суммарных запасов за два года (current, next)
         # Рассчитать накопление по Ф. 62, 65, 68, 71
         # Обновить поля self.f62_result и т.д.
         try:
@@ -983,6 +1051,23 @@ class ProtectiveForestTab(QWidget):
             self.result_text.setText(f"Выбросы N2O от осушения (Ф. 74): {emission:.6f} т N2O/год\nCO2-экв: {co2_eq:.4f} т")
             logging.info(f"ProtectiveForestTab(F74): Result={emission:.6f} t N2O/year")
         except Exception as e: handle_error(self, e, "ProtectiveForestTab", "Ф. 74")
+
+    def _add_table_row(self, table):
+        """Добавляет пустую строку в таблицу."""
+        row_position = table.rowCount()
+        table.insertRow(row_position)
+        # Заполняем ячейки редактируемыми элементами
+        for col in range(table.columnCount()):
+            item = QTableWidgetItem("")
+            table.setItem(row_position, col, item)
+
+    def _remove_table_row(self, table):
+        """Удаляет выбранную строку из таблицы."""
+        current_row = table.currentRow()
+        if current_row >= 0:
+            table.removeRow(current_row)
+        else:
+            QMessageBox.warning(self, "Ошибка", "Выберите строку для удаления")
 
 
 class LandReclamationTab(QWidget):
@@ -1081,7 +1166,29 @@ class LandReclamationTab(QWidget):
 
         # --- Выбросы от сжигания топлива (Ф. 24) ---
         fuel_group = QGroupBox("24. Эмиссия CO2 от сжигания топлива (Формула 24)")
-        # TODO: Добавить интерфейс для Ф.24 (динамические строки)
+        fuel_layout = QVBoxLayout(fuel_group)
+
+        # Таблица для видов топлива (аналогично Ф.10)
+        self.f24_table = QTableWidget()
+        self.f24_table.setColumnCount(3)
+        self.f24_table.setHorizontalHeaderLabels(["Вид топлива", "Объем (V_k)", "EF_k (т C/ед)"])
+        self.f24_table.setRowCount(1)
+        self.f24_table.horizontalHeader().setStretchLastSection(True)
+        fuel_layout.addWidget(self.f24_table)
+
+        # Кнопки управления таблицей
+        f24_btn_layout = QHBoxLayout()
+        add_f24_btn = QPushButton("➕ Добавить топливо")
+        add_f24_btn.clicked.connect(lambda: self.f24_table.setRowCount(self.f24_table.rowCount() + 1))
+        remove_f24_btn = QPushButton("➖ Удалить последнее")
+        remove_f24_btn.clicked.connect(lambda: self.f24_table.setRowCount(max(1, self.f24_table.rowCount() - 1)))
+        calc_f24_btn = QPushButton("Рассчитать C_FUEL (Ф. 24)")
+        calc_f24_btn.clicked.connect(self._calculate_f24)
+        f24_btn_layout.addWidget(add_f24_btn)
+        f24_btn_layout.addWidget(remove_f24_btn)
+        f24_btn_layout.addWidget(calc_f24_btn)
+        fuel_layout.addLayout(f24_btn_layout)
+
         main_layout.addWidget(fuel_group)
 
         # --- Переводы (Ф. 25, 26) ---
@@ -1172,6 +1279,37 @@ class LandReclamationTab(QWidget):
             self.result_text.setText(f"Запас C в почве (Ф. 23): {carbon_stock:.4f} т C/га")
             logging.info(f"LandReclamationTab: F23 calculated: {carbon_stock:.4f} t C/ha")
         except Exception as e: handle_error(self, e, "LandReclamationTab", "Ф. 23")
+
+    def _calculate_f24(self):
+        """Расчет выбросов от сжигания топлива по Ф.24"""
+        try:
+            fuel_data = []
+            for row in range(self.f24_table.rowCount()):
+                fuel_name_item = self.f24_table.item(row, 0)
+                volume_item = self.f24_table.item(row, 1)
+                ef_item = self.f24_table.item(row, 2)
+
+                if fuel_name_item and volume_item and ef_item:
+                    fuel_name = fuel_name_item.text().strip()
+                    if fuel_name:
+                        volume = float(volume_item.text().replace(',', '.'))
+                        ef = float(ef_item.text().replace(',', '.'))
+                        fuel_data.append((volume, ef))
+
+            if not fuel_data:
+                raise ValueError("Добавьте хотя бы один вид топлива с данными")
+
+            c_fuel = self.calculator.calculate_fossil_fuel_emissions(fuel_data)
+
+            result_text = f"C_FUEL (Ф. 24): {c_fuel:.4f} т C\n\nРазбивка по топливу:\n"
+            for i, (volume, ef) in enumerate(fuel_data, 1):
+                contrib = volume * ef
+                result_text += f"  Топливо {i}: {contrib:.4f} т C\n"
+
+            self.result_text.setText(result_text)
+            logging.info(f"LandReclamationTab(F24): Result={c_fuel:.4f} t C")
+        except Exception as e:
+            handle_error(self, e, "LandReclamationTab", "Ф. 24")
 
     def _calculate_f25(self):
         try:
@@ -1300,6 +1438,31 @@ class LandConversionTab(QWidget):
         self.f98_manure_c = create_line_edit(self, validator_params=(0, 1e9, 4), tooltip="Общее поступление C с навозом, т C/год (рассчитайте отдельно)")
         layout_f98.addRow("C навоз (Cmanure, т C/год):", self.f98_manure_c)
         # TODO: Добавить интерфейс для ввода данных по животным (LivestockData)
+
+        # Детальный интерфейс для животных
+        livestock_detail_layout = QVBoxLayout()
+        livestock_label = QLabel('Для детального расчета используйте таблицу:')
+        livestock_detail_layout.addWidget(livestock_label)
+
+        self.livestock_table = QTableWidget()
+        self.livestock_table.setColumnCount(4)
+        self.livestock_table.setHorizontalHeaderLabels(['Тип животного', 'Поголовье', 'Коэф. экскреции C', 'Время на пастбище (%)'])
+        self.livestock_table.setRowCount(1)
+        self.livestock_table.horizontalHeader().setStretchLastSection(True)
+        livestock_detail_layout.addWidget(self.livestock_table)
+
+        livestock_btn_layout = QHBoxLayout()
+        add_livestock_btn = QPushButton('➕ Добавить тип')
+        add_livestock_btn.clicked.connect(lambda: self.livestock_table.setRowCount(self.livestock_table.rowCount() + 1))
+        remove_livestock_btn = QPushButton('➖ Удалить')
+        remove_livestock_btn.clicked.connect(lambda: self.livestock_table.setRowCount(max(1, self.livestock_table.rowCount() - 1)))
+        calc_livestock_btn = QPushButton('Рассчитать C навоза (детально)')
+        calc_livestock_btn.clicked.connect(self._calculate_livestock_manure)
+        livestock_btn_layout.addWidget(add_livestock_btn)
+        livestock_btn_layout.addWidget(remove_livestock_btn)
+        livestock_btn_layout.addWidget(calc_livestock_btn)
+        livestock_detail_layout.addLayout(livestock_btn_layout)
+        layout_f98.addRow(livestock_detail_layout)
         grass_layout.addLayout(layout_f98)
 
         # Ф. 99: Потери от эрозии
@@ -1432,6 +1595,53 @@ class LandConversionTab(QWidget):
             logging.info(f"LandConversionTab: F100 calculated: {carbon_removal:.4f} t C/year")
         except Exception as e: handle_error(self, e, "LandConversionTab", "Ф. 100")
 
+
+
+    def _calculate_livestock_manure(self):
+        """Расчет C навоза от животных на пастбище (детальный расчет для Ф.98)"""
+        try:
+            livestock_data_list = []
+            for row in range(self.livestock_table.rowCount()):
+                animal_type_item = self.livestock_table.item(row, 0)
+                count_item = self.livestock_table.item(row, 1)
+                excretion_item = self.livestock_table.item(row, 2)
+                grazing_time_item = self.livestock_table.item(row, 3)
+
+                if all([animal_type_item, count_item, excretion_item, grazing_time_item]):
+                    animal_type = animal_type_item.text().strip()
+                    if animal_type:
+                        count = int(count_item.text())
+                        excretion = float(excretion_item.text().replace(',', '.'))
+                        grazing_time = float(grazing_time_item.text().replace(',', '.'))
+                        from calculations.absorption_agricultural import LivestockData
+                        livestock_data_list.append(LivestockData(
+                            animal_type=animal_type,
+                            count=count,
+                            excretion_factor=excretion,
+                            grazing_time=grazing_time
+                        ))
+
+            if not livestock_data_list:
+                raise ValueError("Добавьте хотя бы один тип животных с данными")
+
+            # Простой расчет: сумма (поголовье * экскреция * время_на_пастбище/100)
+            total_manure_c = sum(
+                ld.count * ld.excretion_factor * (ld.grazing_time / 100.0)
+                for ld in livestock_data_list
+            )
+
+            # Подставляем результат в поле Ф.98
+            self.f98_manure_c.setText(f"{total_manure_c:.4f}")
+
+            result_text = f"C навоз (детальный расчет): {total_manure_c:.4f} т C/год\n\nРазбивка:\n"
+            for ld in livestock_data_list:
+                contrib = ld.count * ld.excretion_factor * (ld.grazing_time / 100.0)
+                result_text += f"  {ld.animal_type}: {contrib:.4f} т C/год\n"
+
+            self.result_text.setText(result_text)
+            logging.info(f"LandConversionTab(Livestock): Total={total_manure_c:.4f} t C/year")
+        except Exception as e:
+            handle_error(self, e, "LandConversionTab", "Расчет навоза")
 
 class AbsorptionSummaryTab(QWidget):
     """Вкладка для сводного расчета поглощения."""

@@ -84,11 +84,19 @@ class CustomFormulaTab(QWidget):
         calculation_layout = QHBoxLayout()
         self.calculate_button = QPushButton("Рассчитать")
         self.calculate_button.clicked.connect(self._perform_calculation)
+        self.export_button = QPushButton("Экспортировать результат")
+        self.export_button.clicked.connect(self._export_result)
+        self.export_button.setEnabled(False)  # Включается после расчета
         self.result_label = QLabel("Результат: ...")
         self.result_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         calculation_layout.addWidget(self.result_label, 1, Qt.AlignmentFlag.AlignLeft)
+        calculation_layout.addWidget(self.export_button, 0, Qt.AlignmentFlag.AlignRight)
         calculation_layout.addWidget(self.calculate_button, 0, Qt.AlignmentFlag.AlignRight)
         self.form_container_layout.addLayout(calculation_layout)
+
+        # Сохраняем последний результат расчета
+        self.last_calculation_result = None
+        self.last_calculation_details = None
 
     def _add_sum_block(self, expression="", item_count=1):
         block_id = len(self.sum_blocks) + 1
@@ -242,6 +250,14 @@ class CustomFormulaTab(QWidget):
             formula = self.formula_input.text()
             if not formula: raise ValueError("Формула не введена.")
             variables = {name: self._get_float(widget, name) for name, (_, widget) in self.variable_widgets.items()}
+
+            # Детали расчета для экспорта
+            calculation_details = {
+                "formula": formula,
+                "simple_variables": dict(variables),
+                "sum_blocks": []
+            }
+
             for block in self.sum_blocks:
                 expression = block["expression_input"].text()
                 if not expression: raise ValueError(f"Не заполнено выражение для {block['name']}")
@@ -250,13 +266,30 @@ class CustomFormulaTab(QWidget):
                     row_values = {name: self._get_float(widget, name) for name, widget in row["inputs"].items()}
                     variables_by_index.append(row_values)
                 if not variables_by_index: raise ValueError(f"Не сгенерированы или не заполнены поля для {block['name']}")
-                variables[block["name"]] = self.evaluator.evaluate_sum_block(expression, variables_by_index)
+                sum_result = self.evaluator.evaluate_sum_block(expression, variables_by_index)
+                variables[block["name"]] = sum_result
+
+                # Сохраняем детали блока суммирования
+                calculation_details["sum_blocks"].append({
+                    "name": block["name"],
+                    "expression": expression,
+                    "items": variables_by_index,
+                    "sum_result": sum_result
+                })
+
             result = self.evaluator.evaluate(formula, variables)
             self.result_label.setText(f"Результат: {result:.6f}")
             logging.info(f"Custom formula calculation successful: Result={result}")
+
+            # Сохраняем результат для экспорта
+            self.last_calculation_result = result
+            self.last_calculation_details = calculation_details
+            self.export_button.setEnabled(True)
+
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при вычислении: {e}")
             self.result_label.setText("Результат: Ошибка")
+            self.export_button.setEnabled(False)
 
     def _get_float(self, line_edit, field_name):
         text = line_edit.text().replace(",", ".")
@@ -326,6 +359,71 @@ class CustomFormulaTab(QWidget):
                 QMessageBox.information(self, "Успех", f"Формула '{name}' сохранена в библиотеку.")
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить формулу: {e}")
+
+    def _export_result(self):
+        """Экспорт результатов расчета в текстовый файл."""
+        if self.last_calculation_result is None:
+            QMessageBox.warning(self, "Ошибка", "Нет результатов для экспорта. Сначала выполните расчет.")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Экспортировать результат",
+            "",
+            "Текстовые файлы (*.txt);;Все файлы (*.*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            from datetime import datetime
+
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write("=" * 70 + "\n")
+                f.write("РЕЗУЛЬТАТЫ РАСЧЕТА ПО ПОЛЬЗОВАТЕЛЬСКОЙ ФОРМУЛЕ\n")
+                f.write("=" * 70 + "\n")
+                f.write(f"Дата и время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Приложение: GHG Calculator\n\n")
+
+                details = self.last_calculation_details
+
+                f.write("-" * 70 + "\n")
+                f.write("ОСНОВНАЯ ФОРМУЛА:\n")
+                f.write(f"{details['formula']}\n\n")
+
+                if details['simple_variables']:
+                    f.write("-" * 70 + "\n")
+                    f.write("ПРОСТЫЕ ПЕРЕМЕННЫЕ:\n")
+                    for var_name, var_value in sorted(details['simple_variables'].items()):
+                        f.write(f"  {var_name:30s} = {var_value:>15.6f}\n")
+                    f.write("\n")
+
+                if details['sum_blocks']:
+                    f.write("-" * 70 + "\n")
+                    f.write("БЛОКИ СУММИРОВАНИЯ:\n\n")
+                    for block in details['sum_blocks']:
+                        f.write(f"  Блок: {block['name']}\n")
+                        f.write(f"  Выражение: {block['expression']}\n")
+                        f.write(f"  Количество элементов: {len(block['items'])}\n\n")
+
+                        for idx, item_vars in enumerate(block['items'], start=1):
+                            f.write(f"    Элемент {idx}:\n")
+                            for var_name, var_value in sorted(item_vars.items()):
+                                f.write(f"      {var_name:28s} = {var_value:>13.6f}\n")
+
+                        f.write(f"\n  Результат суммирования: {block['sum_result']:.6f}\n\n")
+
+                f.write("=" * 70 + "\n")
+                f.write(f"ИТОГОВЫЙ РЕЗУЛЬТАТ: {self.last_calculation_result:.6f}\n")
+                f.write("=" * 70 + "\n")
+
+            QMessageBox.information(self, "Успех", f"Результаты экспортированы в файл:\n{file_path}")
+            logging.info(f"Результаты расчета экспортированы: {file_path}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось экспортировать результаты: {e}")
+            logging.error(f"Ошибка экспорта: {e}")
 
     def _show_help(self):
         help_text = """

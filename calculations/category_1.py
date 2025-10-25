@@ -3,7 +3,7 @@
 # Комментарии на русском. Поддержка UTF-8.
 
 from data_models_extended import DataService
-from config import CARBON_TO_CO2_FACTOR, MOLAR_MASS_CO2# ИМПОРТ
+from config import CARBON_TO_CO2_FACTOR, MOLAR_MASS_CO2
 
 class Category1Calculator:
     """
