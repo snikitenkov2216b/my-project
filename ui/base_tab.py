@@ -1,8 +1,9 @@
 # ui/base_tab.py
 """
 Базовый класс для всех вкладок UI с общим функционалом.
+Обновленная версия с расширенными методами для унификации кода.
 """
-from PyQt6.QtWidgets import QWidget, QLineEdit
+from PyQt6.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import QLocale
 
@@ -13,8 +14,9 @@ class BaseTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+        self._input_fields = []  # Список всех полей ввода для очистки
 
-    def _create_line_edit(self, validator_params=None, default_text="0", tooltip=""):
+    def _create_line_edit(self, validator_params=None, default_text="", tooltip="", placeholder="0.0"):
         """
         Создает QLineEdit с валидатором.
 
@@ -22,15 +24,25 @@ class BaseTab(QWidget):
             validator_params: Кортеж (min, max, decimals) для валидатора
             default_text: Текст по умолчанию
             tooltip: Всплывающая подсказка
+            placeholder: Текст-подсказка в пустом поле
         """
         line_edit = QLineEdit(default_text)
-        if validator_params:
-            validator = QDoubleValidator(*validator_params, self)
-            validator.setLocale(self.c_locale)
-            validator.setNotation(QDoubleValidator.Notation.StandardNotation)
-            line_edit.setValidator(validator)
+        line_edit.setPlaceholderText(placeholder)
+
+        # Если не переданы параметры валидатора, используем стандартные
+        if validator_params is None:
+            validator_params = (-1e12, 1e12, 6)
+
+        validator = QDoubleValidator(*validator_params, self)
+        validator.setLocale(self.c_locale)
+        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
+        line_edit.setValidator(validator)
+
         if tooltip:
             line_edit.setToolTip(tooltip)
+
+        # Добавляем в список для возможности очистки
+        self._input_fields.append(line_edit)
         return line_edit
 
     def _get_float(self, line_edit, field_name="поле"):
@@ -85,3 +97,46 @@ class BaseTab(QWidget):
             else:
                 result.append(f"{key}: {value}")
         return "\n".join(result)
+
+    def _create_clear_button(self):
+        """
+        Создает кнопку для очистки всех полей ввода.
+
+        Returns:
+            QPushButton: Кнопка очистки
+        """
+        clear_button = QPushButton("🗑 Очистить все поля")
+        clear_button.setToolTip("Очистить все поля ввода на этой вкладке")
+        clear_button.clicked.connect(self._clear_all_fields)
+        clear_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #da190b;
+            }
+        """)
+        return clear_button
+
+    def _clear_all_fields(self):
+        """Очищает все поля ввода на вкладке."""
+        for field in self._input_fields:
+            if isinstance(field, QLineEdit):
+                field.clear()
+
+    def _add_units_to_label(self, base_label: str, units: str) -> str:
+        """
+        Добавляет единицы измерения к метке поля.
+
+        Args:
+            base_label: Базовая метка
+            units: Единицы измерения
+
+        Returns:
+            str: Метка с единицами измерения
+        """
+        return f"{base_label} ({units}):"

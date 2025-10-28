@@ -181,6 +181,106 @@ class PermanentForestCalculator:
         """
         return volume * conversion_factor
 
+    def calculate_mean_deadwood_carbon_per_hectare(
+        self, carbon_stock: float, area: float
+    ) -> float:
+        """
+        Формула 37: Средний запас углерода в мертвой древесине на гектар.
+        MCD_ij = CD_ij / S_ij
+
+        :param carbon_stock: Запас углерода в мертвой древесине, т C
+        :param area: Площадь, га
+        :return: Средний запас, т C/га
+        """
+        if area <= 0:
+            raise ValueError("Площадь должна быть больше 0")
+        return carbon_stock / area
+
+    def calculate_deadwood_absorption_rate(
+        self,
+        mcd_current: float,
+        mcd_prev: float,
+        mcd_next: float,
+        ti_prev: float,
+        ti_current: float,
+        ti_next: float,
+    ) -> float:
+        """
+        Формула 38: Скорость абсорбции углерода мертвой древесиной.
+        MAbD_ij = (MCD_ij - MCD_i-1,j)/(TI_i-1,j + TI_ij) +
+                  (MCD_i+1,j - MCD_ij)/(TI_ij + TI_i+j)
+
+        :param mcd_current: Текущий средний запас C в мертвой древесине
+        :param mcd_prev: Предыдущий средний запас C
+        :param mcd_next: Следующий средний запас C
+        :param ti_prev: Предыдущий возрастной интервал
+        :param ti_current: Текущий возрастной интервал
+        :param ti_next: Следующий возрастной интервал
+        :return: Скорость абсорбции, т C/га/год
+        """
+        term1 = (mcd_current - mcd_prev) / (ti_prev + ti_current)
+        term2 = (mcd_next - mcd_current) / (ti_current + ti_next)
+        return term1 + term2
+
+    def calculate_deadwood_total_absorption(
+        self, area: float, absorption_rate: float
+    ) -> float:
+        """
+        Формула 39: Общая абсорбция углерода мертвой древесиной.
+        AbD_ij = S_ij × MAbD_ij
+
+        :param area: Площадь, га
+        :param absorption_rate: Скорость абсорбции, т C/га/год
+        :return: Общая абсорбция, т C/год
+        """
+        return area * absorption_rate
+
+    def calculate_deadwood_harvest_loss(
+        self, annual_harvest_area: float, mean_deadwood_carbon: float, mean_area: float
+    ) -> float:
+        """
+        Формула 40: Потери углерода мертвой древесины при рубках.
+        LsDH = ASH × CD_m / S_m
+
+        :param annual_harvest_area: Годичная площадь рубок, га/год
+        :param mean_deadwood_carbon: Средний запас углерода в мертвой древесине, т C
+        :param mean_area: Средняя площадь, га
+        :return: Потери углерода, т C/год
+        """
+        if mean_area <= 0:
+            raise ValueError("Площадь должна быть больше 0")
+        return annual_harvest_area * mean_deadwood_carbon / mean_area
+
+    def calculate_deadwood_fire_loss(
+        self, annual_fire_area: float, mean_deadwood_carbon: float, mean_area: float
+    ) -> float:
+        """
+        Формула 41: Потери углерода мертвой древесины при пожарах.
+        LsDF = ASF × CD_a / S_a
+
+        :param annual_fire_area: Годичная площадь пожаров, га/год
+        :param mean_deadwood_carbon: Средний запас углерода в мертвой древесине, т C
+        :param mean_area: Средняя площадь, га
+        :return: Потери углерода, т C/год
+        """
+        if mean_area <= 0:
+            raise ValueError("Площадь должна быть больше 0")
+        return annual_fire_area * mean_deadwood_carbon / mean_area
+
+    def calculate_deadwood_budget(
+        self, absorption: float, harvest_loss: float, fire_loss: float
+    ) -> float:
+        """
+        Формула 42: Годичный бюджет углерода мертвой древесины.
+        BD = AbD - LsDH - LsDF
+
+        :param absorption: Абсорбция углерода, т C/год
+        :param harvest_loss: Потери от рубок, т C/год
+        :param fire_loss: Потери от пожаров, т C/год
+        :return: Бюджет углерода, т C/год
+        """
+        return absorption - harvest_loss - fire_loss
+
     def calculate_litter_carbon_stock(self, area: float, litter_factor: float) -> float:
         """
         Формула 43: Запас углерода в подстилке.
@@ -191,6 +291,101 @@ class PermanentForestCalculator:
         :return: Запас углерода в подстилке, т C
         """
         return area * litter_factor
+
+    def calculate_litter_absorption_rate(
+        self,
+        mcl_current: float,
+        mcl_prev: float,
+        mcl_next: float,
+        ti_prev: float,
+        ti_current: float,
+        ti_next: float,
+    ) -> float:
+        """
+        Формула 44: Скорость абсорбции углерода подстилкой.
+        MAbL_ij = (MCL_ij - MCL_i-1,j)/(TI_i-1,j + TI_ij) +
+                  (MCL_i+1,j - MCL_ij)/(TI_ij + TI_i+1,j)
+
+        :param mcl_current: Текущий средний запас C в подстилке
+        :param mcl_prev: Предыдущий средний запас C
+        :param mcl_next: Следующий средний запас C
+        :param ti_prev: Предыдущий возрастной интервал
+        :param ti_current: Текущий возрастной интервал
+        :param ti_next: Следующий возрастной интервал
+        :return: Скорость абсорбции, т C/га/год
+        """
+        term1 = (mcl_current - mcl_prev) / (ti_prev + ti_current)
+        term2 = (mcl_next - mcl_current) / (ti_current + ti_next)
+        return term1 + term2
+
+    def calculate_litter_total_absorption(
+        self, area: float, absorption_rate: float
+    ) -> float:
+        """
+        Формула 45: Общая абсорбция углерода подстилкой.
+        AbL_ij = S_ij × MAbL_ij
+
+        :param area: Площадь, га
+        :param absorption_rate: Скорость абсорбции, т C/га/год
+        :return: Общая абсорбция, т C/год
+        """
+        return area * absorption_rate
+
+    def calculate_litter_harvest_loss(
+        self,
+        annual_harvest_area: float,
+        mean_litter_carbon: float,
+        mean_area: float,
+        initial_litter_carbon: float,
+    ) -> float:
+        """
+        Формула 46: Потери углерода подстилки при рубках.
+        LsLH = ASH(CL_m / S_m - MCL_0m)
+
+        :param annual_harvest_area: Годичная площадь рубок, га/год
+        :param mean_litter_carbon: Средний запас углерода в подстилке, т C
+        :param mean_area: Средняя площадь, га
+        :param initial_litter_carbon: Начальный запас углерода в подстилке, т C/га
+        :return: Потери углерода, т C/год
+        """
+        if mean_area <= 0:
+            raise ValueError("Площадь должна быть больше 0")
+        return annual_harvest_area * (mean_litter_carbon / mean_area - initial_litter_carbon)
+
+    def calculate_litter_fire_loss(
+        self,
+        annual_fire_area: float,
+        mean_litter_carbon: float,
+        mean_area: float,
+        initial_litter_carbon: float,
+    ) -> float:
+        """
+        Формула 47: Потери углерода подстилки при пожарах.
+        LsLF = ASF(CL_a / S_a - MCL_0a)
+
+        :param annual_fire_area: Годичная площадь пожаров, га/год
+        :param mean_litter_carbon: Средний запас углерода в подстилке, т C
+        :param mean_area: Средняя площадь, га
+        :param initial_litter_carbon: Начальный запас углерода в подстилке, т C/га
+        :return: Потери углерода, т C/год
+        """
+        if mean_area <= 0:
+            raise ValueError("Площадь должна быть больше 0")
+        return annual_fire_area * (mean_litter_carbon / mean_area - initial_litter_carbon)
+
+    def calculate_litter_budget(
+        self, absorption: float, harvest_loss: float, fire_loss: float
+    ) -> float:
+        """
+        Формула 48: Годичный бюджет углерода подстилки.
+        BP = AbL - LsLH - LsLF
+
+        :param absorption: Абсорбция углерода, т C/год
+        :param harvest_loss: Потери от рубок, т C/год
+        :param fire_loss: Потери от пожаров, т C/год
+        :return: Бюджет углерода, т C/год
+        """
+        return absorption - harvest_loss - fire_loss
 
     def calculate_soil_carbon_stock(self, area: float, soil_factor: float) -> float:
         """
@@ -213,13 +408,34 @@ class PermanentForestCalculator:
         ti_next: float,
     ) -> float:
         """
-        Формула 50: Абсорбция углерода почвой.
+        Формула 50: Скорость абсорбции углерода почвой.
         MAbS_ij = (MCS_ij - MCS_i-1,j)/(TI_i-1,j - TI_ij) +
                   (MCS_i+1,j - MCS_ij)/(TI_ij - TI_i+1,j)
+
+        :param mcs_current: Текущий средний запас C в почве
+        :param mcs_prev: Предыдущий средний запас C
+        :param mcs_next: Следующий средний запас C
+        :param ti_prev: Предыдущий возрастной интервал
+        :param ti_current: Текущий возрастной интервал
+        :param ti_next: Следующий возрастной интервал
+        :return: Скорость абсорбции, т C/га/год
         """
         term1 = (mcs_current - mcs_prev) / (ti_prev - ti_current)
         term2 = (mcs_next - mcs_current) / (ti_current - ti_next)
         return term1 + term2
+
+    def calculate_soil_total_absorption(
+        self, area: float, absorption_rate: float
+    ) -> float:
+        """
+        Формула 51: Общая абсорбция углерода почвой.
+        AbL_ij = S_ij × MAbS_ij
+
+        :param area: Площадь, га
+        :param absorption_rate: Скорость абсорбции, т C/га/год
+        :return: Общая абсорбция, т C/год
+        """
+        return area * absorption_rate
 
     def calculate_soil_harvest_loss(
         self,

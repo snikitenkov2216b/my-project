@@ -62,10 +62,8 @@ class CustomFormulaTab(QWidget):
         # Локаль для валидации чисел
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         
-        # Таймер для отложенного рендеринга формулы
-        self.render_timer = QTimer(self)
-        self.render_timer.setSingleShot(True)
-        self.render_timer.timeout.connect(self._render_formula)
+        # Убираем автоматический рендеринг для ускорения работы
+        # Теперь рендеринг будет происходить только по кнопке
         
         self._init_ui()
         self.logger.info("CustomFormulaTab initialized")
@@ -135,16 +133,21 @@ class CustomFormulaTab(QWidget):
         self.formula_input.setPlaceholderText(
             "Пример: E_CO2_y = Sum_Block_1 + C_factor * 3.66"
         )
-        self.formula_input.textChanged.connect(self._on_formula_text_changed)
         self.formula_input.setMinimumHeight(35)
-        
+
+        self.preview_button = QPushButton("👁")
+        self.preview_button.setFixedSize(35, 35)
+        self.preview_button.setToolTip("Показать предпросмотр формулы (LaTeX)")
+        self.preview_button.clicked.connect(self._render_formula)
+
         self.help_button = QPushButton("❓")
         self.help_button.setFixedSize(35, 35)
         self.help_button.setToolTip("Справка по синтаксису формул")
         self.help_button.clicked.connect(self._show_help_dialog)
-        
+
         input_layout.addWidget(QLabel("<b>Формула:</b>"))
         input_layout.addWidget(self.formula_input, 1)
+        input_layout.addWidget(self.preview_button)
         input_layout.addWidget(self.help_button)
         
         formula_layout.addLayout(input_layout)
@@ -236,10 +239,6 @@ class CustomFormulaTab(QWidget):
         self.form_container_layout.addWidget(results_group)
 
     # ==================== ОСНОВНЫЕ МЕТОДЫ ====================
-
-    def _on_formula_text_changed(self):
-        """Обработчик изменения текста формулы (отложенный рендеринг)."""
-        self.render_timer.start(500)  # Задержка 500 мс
 
     def _render_formula(self):
         """Рендеринг формулы в LaTeX с помощью matplotlib."""
@@ -439,7 +438,6 @@ class CustomFormulaTab(QWidget):
         expression_input.setToolTip(
             "Выражение с индексом '_j', который будет заменен на _1, _2, ..., _n"
         )
-        expression_input.textChanged.connect(self._on_formula_text_changed)
         settings_layout.addRow("<b>Выражение (с '_j'):</b>", expression_input)
         
         # Количество элементов
@@ -447,7 +445,6 @@ class CustomFormulaTab(QWidget):
         item_count_spinbox.setRange(1, 100)
         item_count_spinbox.setValue(item_count)
         item_count_spinbox.setToolTip("Количество элементов в сумме (n)")
-        item_count_spinbox.valueChanged.connect(self._on_formula_text_changed)
         settings_layout.addRow("<b>Количество элементов (n):</b>", item_count_spinbox)
         
         # Кнопка генерации полей
@@ -503,7 +500,6 @@ class CustomFormulaTab(QWidget):
             block_to_remove["group_widget"].deleteLater()
             self.sum_blocks.remove(block_to_remove)
             self.logger.info(f"Removed {block_name}")
-            self._on_formula_text_changed()
 
     def _generate_sum_block_fields(self, block_data: dict):
         """Генерирует поля ввода для элементов блока суммирования."""
@@ -898,17 +894,16 @@ class CustomFormulaTab(QWidget):
         
         # Устанавливаем формулу
         self.formula_input.setText(formula_data.get("main_formula", ""))
-        
+
         # Воссоздаем блоки суммирования
         for block_data in formula_data.get("sum_blocks", []):
             self._add_sum_block(
                 expression=block_data.get("expression", ""),
                 item_count=block_data.get("item_count", 1)
             )
-        
+
         # Анализируем формулу
         self._analyze_and_create_fields()
-        self._on_formula_text_changed()
 
     def _load_library(self) -> list:
         """Загружает библиотеку формул из файла."""

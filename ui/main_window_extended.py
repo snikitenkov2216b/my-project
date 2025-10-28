@@ -123,14 +123,12 @@ class ExtendedMainWindow(QMainWindow):
             except Exception as e:
                 logging.error(f"Ошибка при создании вкладки {calc_type}: {e}", exc_info=True)
 
-        # Добавляем сводную вкладку (требует всю фабрику, а не отдельный калькулятор)
+        # Добавляем сводную вкладку (требует всю фабрику и ссылку на tabs)
         try:
             summary_class = get_absorption_tab_class("ui.absorption_tabs", "AbsorptionSummaryTab")
             if summary_class:
-                self.absorption_tabs.addTab(
-                    summary_class(self.calculator_factory),
-                    "📈 Сводный расчет"
-                )
+                summary_tab = summary_class(self.calculator_factory, self.absorption_tabs)
+                self.absorption_tabs.addTab(summary_tab, "📈 Сводный расчет")
         except Exception as e:
             logging.error(f"Ошибка при создании сводной вкладки: {e}", exc_info=True)
 

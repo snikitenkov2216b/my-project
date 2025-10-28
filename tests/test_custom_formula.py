@@ -102,14 +102,14 @@ class TestCustomFormulaEvaluator:
         """Проверка, что некорректная формула вызывает ошибку"""
         evaluator = CustomFormulaEvaluator()
 
-        with pytest.raises(ValueError, match="Некорректный синтаксис"):
+        with pytest.raises(ValueError, match="Ошибка парсинга формулы"):
             evaluator.parse_variables("a ** ** b")  # Некорректный синтаксис
 
     def test_missing_variable_raises_error(self):
         """Проверка, что отсутствие переменной вызывает ошибку"""
         evaluator = CustomFormulaEvaluator()
 
-        with pytest.raises(ValueError, match="Ошибка при вычислении формулы"):
+        with pytest.raises(ValueError, match="Отсутствуют значения для переменных"):
             evaluator.evaluate("a * b", {'a': 10})  # b отсутствует
 
     def test_real_world_emissions_formula(self):
