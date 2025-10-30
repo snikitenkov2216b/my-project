@@ -23,9 +23,11 @@ from PyQt6.QtCore import Qt, QLocale
 import math
 
 from calculations.category_20 import Category20Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category20Tab(QWidget):
+
+class Category20Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 20 "Захоронение твердых отходов".
     """

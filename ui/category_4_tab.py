@@ -19,9 +19,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_4 import Category4Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category4Tab(QWidget):
+
+class Category4Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 4 "Нефтепереработка".
     """

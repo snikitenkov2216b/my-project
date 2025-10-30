@@ -21,9 +21,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_23 import Category23Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category23Tab(QWidget):
+
+class Category23Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 23 "Очистка и сброс сточных вод".
     """

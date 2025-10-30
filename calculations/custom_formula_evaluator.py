@@ -10,8 +10,9 @@
 import logging
 import re
 from typing import Dict, Set, List
-from sympy import sympify, Symbol, SympifyError
+from sympy import sympify, Symbol, SympifyError, sqrt, exp, log, sin, cos, tan, pi, E
 from sympy.core.expr import Expr
+import math
 
 
 class CustomFormulaEvaluator:
@@ -215,6 +216,143 @@ class CustomFormulaEvaluator:
             f"Sum block total: {expression_template} (n={len(variables_by_index)}) = {total_sum:.6f}"
         )
         return total_sum
+
+    def extract_variables(self, formula_text: str) -> Set[str]:
+        """
+        Извлекает переменные из выражения (алиас для parse_variables).
+
+        Args:
+            formula_text: Формула для анализа
+
+        Returns:
+            Множество имен переменных
+        """
+        return self.parse_variables(formula_text)
+
+    # ==================== СПЕЦИАЛИЗИРОВАННЫЕ ФУНКЦИИ ДЛЯ ПГ ====================
+
+    def calculate_co2_from_fuel(self, fuel_consumption: float, emission_factor: float,
+                                oxidation_factor: float = 1.0) -> float:
+        """
+        Расчет выбросов CO2 от сжигания топлива.
+
+        Формула: E_CO2 = FC * EF * OF
+
+        Args:
+            fuel_consumption: Расход топлива (т, м³)
+            emission_factor: Коэффициент эмиссии (т CO2/т топлива)
+            oxidation_factor: Коэффициент окисления (по умолчанию 1.0)
+
+        Returns:
+            Выбросы CO2 в тоннах
+        """
+        return fuel_consumption * emission_factor * oxidation_factor
+
+    def calculate_ch4_n2o(self, fuel_consumption: float, emission_factor: float,
+                         gwp: float = 1.0) -> float:
+        """
+        Расчет выбросов CH4 или N2O с учетом потенциала глобального потепления.
+
+        Формула: E_gas = FC * EF * GWP
+
+        Args:
+            fuel_consumption: Расход топлива (т, м³)
+            emission_factor: Коэффициент эмиссии (кг газа/т топлива)
+            gwp: Потенциал глобального потепления (CH4=25, N2O=298)
+
+        Returns:
+            Выбросы в CO2-эквиваленте (т)
+        """
+        return (fuel_consumption * emission_factor * gwp) / 1000  # кг → т
+
+    def calculate_carbon_content(self, carbon_fraction: float, mass: float) -> float:
+        """
+        Расчет содержания углерода в материале.
+
+        Формула: C = mass * carbon_fraction
+
+        Args:
+            carbon_fraction: Доля углерода (0-1)
+            mass: Масса материала (т)
+
+        Returns:
+            Масса углерода (т)
+        """
+        return carbon_fraction * mass
+
+    def calculate_co2_from_carbon(self, carbon_mass: float) -> float:
+        """
+        Преобразование массы углерода в массу CO2.
+
+        Формула: CO2 = C * (44/12)
+
+        Args:
+            carbon_mass: Масса углерода (т)
+
+        Returns:
+            Масса CO2 (т)
+        """
+        return carbon_mass * (44.0 / 12.0)
+
+    def calculate_weighted_average(self, values: List[float], weights: List[float]) -> float:
+        """
+        Расчет взвешенного среднего.
+
+        Формула: avg = Σ(value_i * weight_i) / Σ(weight_i)
+
+        Args:
+            values: Список значений
+            weights: Список весов
+
+        Returns:
+            Взвешенное среднее
+
+        Raises:
+            ValueError: Если длины списков не совпадают или веса равны 0
+        """
+        if len(values) != len(weights):
+            raise ValueError("Длины списков values и weights должны совпадать")
+
+        total_weight = sum(weights)
+        if total_weight == 0:
+            raise ValueError("Сумма весов не может быть равна 0")
+
+        weighted_sum = sum(v * w for v, w in zip(values, weights))
+        return weighted_sum / total_weight
+
+    def interpolate_linear(self, x: float, x1: float, y1: float, x2: float, y2: float) -> float:
+        """
+        Линейная интерполяция между двумя точками.
+
+        Формула: y = y1 + (y2-y1) * (x-x1) / (x2-x1)
+
+        Args:
+            x: Значение для интерполяции
+            x1, y1: Первая точка
+            x2, y2: Вторая точка
+
+        Returns:
+            Интерполированное значение y
+        """
+        if x2 == x1:
+            return y1
+        return y1 + (y2 - y1) * (x - x1) / (x2 - x1)
+
+    def calculate_decay_exponential(self, initial: float, rate: float, time: float) -> float:
+        """
+        Экспоненциальный распад (например, для метана на свалках).
+
+        Формула: N(t) = N0 * exp(-rate * t)
+
+        Args:
+            initial: Начальное значение
+            rate: Константа скорости распада
+            time: Время
+
+        Returns:
+            Значение после распада
+        """
+        return initial * math.exp(-rate * time)
 
     def validate_formula_syntax(self, formula_text: str) -> tuple[bool, str]:
         """

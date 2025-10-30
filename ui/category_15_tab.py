@@ -20,9 +20,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_15 import Category15Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category15Tab(QWidget):
+
+class Category15Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 15 "Производство ферросплавов".
     """

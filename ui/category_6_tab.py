@@ -21,9 +21,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_6 import Category6Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category6Tab(QWidget):
+
+class Category6Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 6 "Производство цемента".
     """

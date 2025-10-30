@@ -20,9 +20,11 @@ from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_2 import Category2Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category2Tab(QWidget):
+
+class Category2Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 2 "Сжигание в факелах".
     """

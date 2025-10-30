@@ -21,9 +21,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_16 import Category16Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category16Tab(QWidget):
+
+class Category16Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 16 "Производство первичного алюминия".
     """

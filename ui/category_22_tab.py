@@ -21,9 +21,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_22 import Category22Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category22Tab(QWidget):
+
+class Category22Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 22 "Сжигание отходов".
     """

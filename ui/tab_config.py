@@ -37,12 +37,12 @@ EMISSION_TABS_CONFIG = [
 # Конфигурация вкладок поглощения
 ABSORPTION_TABS_CONFIG = [
     # (тип_калькулятора, заголовок_вкладки, модуль_вкладки, класс_вкладки)
-    ("ForestRestoration", "🌱 Лесовосстановление", "ui.absorption_tabs", "ForestRestorationTab"),
-    ("PermanentForest", "🌲 Постоянные леса", "ui.absorption_tabs", "PermanentForestTab"),
-    ("ProtectiveForest", "🌳 Защитные насаждения", "ui.absorption_tabs", "ProtectiveForestTab"),
-    ("AgriculturalLand", "🌾 Сельхозугодья", "ui.absorption_tabs", "AgriculturalAbsorptionTab"),
-    ("LandReclamation", "♻️ Рекультивация", "ui.absorption_tabs", "LandReclamationTab"),
-    ("LandConversion", "🔄 Конверсия земель", "ui.absorption_tabs", "LandConversionTab"),
+    ("ForestRestoration", "🌱 Лесовосстановление", "ui.forest_restoration_tab", "ForestRestorationTab"),
+    ("PermanentForest", "🌲 Постоянные леса", "ui.permanent_forest_tab", "PermanentForestTab"),
+    ("ProtectiveForest", "🌳 Защитные насаждения", "ui.protective_forest_tab", "ProtectiveForestTab"),
+    ("AgriculturalLand", "🌾 Сельхозугодья", "ui.agricultural_absorption_tab", "AgriculturalAbsorptionTab"),
+    ("LandReclamation", "♻️ Рекультивация", "ui.land_reclamation_tab", "LandReclamationTab"),
+    ("LandConversion", "🔄 Конверсия земель", "ui.land_conversion_tab", "LandConversionTab"),
 ]
 
 

@@ -17,9 +17,10 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_0 import Category0Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category0Tab(QWidget):
+class Category0Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 0 "Расчет расхода по балансу".
     """
@@ -84,9 +85,10 @@ class Category0Tab(QWidget):
     def _create_line_edit(self, placeholder=""):
         line_edit = QLineEdit()
         line_edit.setPlaceholderText(placeholder)
-        validator = QDoubleValidator(-1e12, 1e12, 6, self)
+        validator = QDoubleValidator(0.0, 1e12, 6, self)
         validator.setLocale(self.c_locale)
         line_edit.setValidator(validator)
+        line_edit.setToolTip("Допустимые значения: 0 и выше (масса/объем не может быть отрицательным)")
         return line_edit
 
     def _get_float(self, line_edit, field_name):

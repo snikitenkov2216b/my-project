@@ -15,6 +15,7 @@ class BaseTab(QWidget):
         super().__init__(parent)
         self.c_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
         self._input_fields = []  # Список всех полей ввода для очистки
+        self._named_fields = {}  # Словарь для именованных полей
 
     def _create_line_edit(self, validator_params=None, default_text="", tooltip="", placeholder="0.0"):
         """
@@ -140,3 +141,63 @@ class BaseTab(QWidget):
             str: Метка с единицами измерения
         """
         return f"{base_label} ({units}):"
+
+    def get_data(self):
+        """
+        Собирает данные из всех полей вкладки.
+
+        Returns:
+            dict: Словарь с данными вкладки
+        """
+        data = {}
+
+        # Если есть именованные поля, используем их
+        if self._named_fields:
+            for name, field in self._named_fields.items():
+                if isinstance(field, QLineEdit):
+                    data[name] = field.text()
+        else:
+            # Иначе используем все поля по индексу
+            for i, field in enumerate(self._input_fields):
+                if isinstance(field, QLineEdit):
+                    data[f'field_{i}'] = field.text()
+
+        # Добавляем результат, если есть
+        result = None
+        if hasattr(self, 'result_label') and self.result_label:
+            result = self.result_label.text()
+
+        return {'fields': data, 'result': result}
+
+    def set_data(self, data):
+        """
+        Загружает данные во все поля вкладки.
+
+        Args:
+            data: dict с данными для загрузки
+        """
+        if not isinstance(data, dict):
+            return
+
+        fields_data = data.get('fields', {})
+
+        # Если есть именованные поля, используем их
+        if self._named_fields:
+            for name, field in self._named_fields.items():
+                if isinstance(field, QLineEdit) and name in fields_data:
+                    field.setText(str(fields_data[name]))
+        else:
+            # Иначе загружаем по индексу
+            for i, field in enumerate(self._input_fields):
+                field_name = f'field_{i}'
+                if isinstance(field, QLineEdit) and field_name in fields_data:
+                    field.setText(str(fields_data[field_name]))
+
+        # Восстанавливаем результат, если есть
+        result = data.get('result')
+        if result and hasattr(self, 'result_label') and self.result_label:
+            self.result_label.setText(str(result))
+
+    def clear_fields(self):
+        """Очищает все поля ввода на вкладке (алиас для _clear_all_fields)."""
+        self._clear_all_fields()

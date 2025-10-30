@@ -349,3 +349,52 @@ class AbsorptionBaseTab(QWidget):
 
         layout.addStretch()
         return layout
+
+    def get_data(self):
+        """
+        Собирает данные из всех полей вкладки.
+
+        Returns:
+            dict: Словарь с данными вкладки
+        """
+        data = {}
+        for i, field in enumerate(self._input_fields):
+            if isinstance(field, QLineEdit):
+                field_name = getattr(field, 'objectName', lambda: f'field_{i}')()
+                if not field_name or field_name.startswith('qt_'):
+                    field_name = f'field_{i}'
+                data[field_name] = field.text()
+
+        result = None
+        if self.result_text and self.result_text.text():
+            result = self.result_text.text()
+
+        return {'fields': data, 'result': result}
+
+    def set_data(self, data):
+        """
+        Загружает данные во все поля вкладки.
+
+        Args:
+            data: dict с данными для загрузки
+        """
+        if not isinstance(data, dict):
+            return
+
+        fields_data = data.get('fields', {})
+        for i, field in enumerate(self._input_fields):
+            if isinstance(field, QLineEdit):
+                field_name = getattr(field, 'objectName', lambda: f'field_{i}')()
+                if not field_name or field_name.startswith('qt_'):
+                    field_name = f'field_{i}'
+                if field_name in fields_data:
+                    field.setText(str(fields_data[field_name]))
+
+        # Восстанавливаем результат, если есть
+        result = data.get('result')
+        if result and self.result_text:
+            self.result_text.setText(str(result))
+
+    def clear_fields(self):
+        """Очищает все поля ввода на вкладке (алиас для _clear_all_fields)."""
+        self._clear_all_fields()

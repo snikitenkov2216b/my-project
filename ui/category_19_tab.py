@@ -22,9 +22,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_19 import Category19Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category19Tab(QWidget):
+
+class Category19Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 19 "Дорожное хозяйство".
     """

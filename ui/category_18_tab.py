@@ -19,9 +19,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_18 import Category18Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category18Tab(QWidget):
+
+class Category18Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 18 "Транспорт".
     """

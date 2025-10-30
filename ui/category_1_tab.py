@@ -21,9 +21,11 @@ from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_1 import Category1Calculator
 from config import OXIDATION_FACTOR_SOLID, OXIDATION_FACTOR_LIQUID, OXIDATION_FACTOR_GAS
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category1Tab(QWidget):
+
+class Category1Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 1 "Стационарное сжигание топлива".
     """

@@ -20,9 +20,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_9 import Category9Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category9Tab(QWidget):
+
+class Category9Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 9 "Производство керамических изделий".
     """

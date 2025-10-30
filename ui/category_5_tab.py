@@ -20,9 +20,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_5 import Category5Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category5Tab(QWidget):
+
+class Category5Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 5 "Производство кокса".
     """

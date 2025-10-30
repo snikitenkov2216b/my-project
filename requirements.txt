@@ -6,6 +6,9 @@ PyQt6==6.6.1
 # Математика и визуализация
 matplotlib==3.8.2
 
+# Работа с Excel файлами
+openpyxl==3.1.2
+
 # Парсинг LaTeX формул
 latex2sympy2==1.9.1
 antlr4-python3-runtime==4.11

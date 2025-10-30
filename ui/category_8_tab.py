@@ -19,9 +19,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_8 import Category8Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category8Tab(QWidget):
+
+class Category8Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 8 "Производство стекла".
     """

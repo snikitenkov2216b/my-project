@@ -18,9 +18,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_11 import Category11Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category11Tab(QWidget):
+
+class Category11Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 11 "Производство азотной кислоты,
     капролактама, глиоксаля и глиоксиловой кислоты".

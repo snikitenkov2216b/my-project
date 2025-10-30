@@ -20,9 +20,10 @@ import re
 from pathlib import Path
 from datetime import datetime
 
-import matplotlib
-matplotlib.use('Agg')  # Без GUI
-import matplotlib.pyplot as plt
+# Ленивый импорт matplotlib для ускорения запуска
+# import matplotlib
+# matplotlib.use('Agg')
+# import matplotlib.pyplot as plt
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QLineEdit, QPushButton, QLabel,
@@ -106,19 +107,28 @@ class CustomFormulaTab(QWidget):
         """Создает блок управления библиотекой формул."""
         management_group = QGroupBox("📚 Библиотека формул")
         management_layout = QHBoxLayout(management_group)
-        
+
         self.load_button = QPushButton("📂 Загрузить из библиотеки")
         self.load_button.setToolTip("Загрузить ранее сохраненную формулу")
         self.load_button.clicked.connect(self._load_formula_from_library)
-        
+
         self.save_button = QPushButton("💾 Сохранить в библиотеку")
         self.save_button.setToolTip("Сохранить текущую формулу для повторного использования")
         self.save_button.clicked.connect(self._save_formula_to_library)
-        
+
+        self.delete_button = QPushButton("🗑 Удалить из библиотеки")
+        self.delete_button.setToolTip("Удалить сохраненную формулу из библиотеки")
+        self.delete_button.clicked.connect(self._delete_formula_from_library)
+        self.delete_button.setStyleSheet(
+            "QPushButton { background-color: #f44336; color: white; }"
+            "QPushButton:hover { background-color: #da190b; }"
+        )
+
         management_layout.addWidget(self.load_button)
         management_layout.addWidget(self.save_button)
+        management_layout.addWidget(self.delete_button)
         management_layout.addStretch()
-        
+
         self.form_container_layout.addWidget(management_group)
 
     def _create_formula_input_block(self):
@@ -243,15 +253,20 @@ class CustomFormulaTab(QWidget):
     def _render_formula(self):
         """Рендеринг формулы в LaTeX с помощью matplotlib."""
         formula_text = self.formula_input.text().strip()
-        
+
         if not formula_text:
             self.formula_display.setText("Введите формулу для предпросмотра...")
             return
-        
+
         try:
+            # Ленивый импорт matplotlib только когда нужно
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+
             # Преобразуем формулу в LaTeX формат
             formula_latex = self._convert_to_latex(formula_text)
-            
+
             # Создаем изображение формулы
             fig, ax = plt.subplots(figsize=(8, 1.5), dpi=120)
             ax.text(0.5, 0.5, f"${formula_latex}$", size=14, 
@@ -882,16 +897,71 @@ class CustomFormulaTab(QWidget):
                 f"Не удалось загрузить формулу:\n{e}"
             )
 
+    def _delete_formula_from_library(self):
+        """Удаляет формулу из библиотеки."""
+        try:
+            library = self._load_library()
+
+            if not library:
+                QMessageBox.information(
+                    self, "Библиотека пуста",
+                    "В библиотеке нет формул для удаления."
+                )
+                return
+
+            # Выбор формулы для удаления
+            formula_names = [f['name'] for f in library]
+
+            name, ok = QInputDialog.getItem(
+                self, "Удалить формулу",
+                "Выберите формулу для удаления:",
+                formula_names, 0, False
+            )
+
+            if not ok:
+                return
+
+            # Подтверждение удаления
+            confirm = QMessageBox.question(
+                self, "Подтверждение удаления",
+                f"Вы действительно хотите удалить формулу '{name}'?\n\n"
+                "Это действие нельзя отменить.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if confirm != QMessageBox.StandardButton.Yes:
+                return
+
+            # Удаляем формулу из библиотеки
+            library = [f for f in library if f['name'] != name]
+
+            # Сохраняем обновленную библиотеку
+            self._save_library(library)
+
+            QMessageBox.information(
+                self, "Успех",
+                f"Формула '{name}' успешно удалена из библиотеки."
+            )
+
+            self.logger.info(f"Formula deleted from library: {name}")
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Ошибка",
+                f"Не удалось удалить формулу:\n{e}"
+            )
+
     def _reconstruct_ui_from_formula(self, formula_data: dict):
         """Восстанавливает UI из сохраненных данных формулы."""
         # Полная очистка
         self.formula_input.clear()
         self._clear_simple_variable_fields()
-        
+
         # Удаляем все блоки суммирования
         for block in list(self.sum_blocks):
             self._remove_sum_block(block["name"])
-        
+
         # Устанавливаем формулу
         self.formula_input.setText(formula_data.get("main_formula", ""))
 
@@ -929,7 +999,7 @@ class CustomFormulaTab(QWidget):
         """Показывает справку по использованию модуля."""
         help_text = """
         <h2>Справка по модулю "Своя формула"</h2>
-        
+
         <h3>📌 Основные возможности</h3>
         <ul>
             <li>Создание пользовательских формул расчета выбросов ПГ</li>
@@ -937,9 +1007,10 @@ class CustomFormulaTab(QWidget):
             <li>Визуализация формул в LaTeX формате</li>
             <li>Сохранение формул в библиотеку</li>
             <li>Экспорт результатов в файл</li>
+            <li><b>НОВОЕ:</b> Расширенные математические функции</li>
         </ul>
-        
-        <h3>🔢 Синтаксис формул</h3>
+
+        <h3>🔢 Базовые операции</h3>
         <table border="1" cellpadding="5" style="border-collapse: collapse;">
             <tr bgcolor="#f0f0f0">
                 <th>Операция</th>
@@ -947,19 +1018,19 @@ class CustomFormulaTab(QWidget):
                 <th>Пример</th>
             </tr>
             <tr>
-                <td>Умножение</td>
-                <td>*</td>
-                <td>a * b</td>
+                <td>Сложение / Вычитание</td>
+                <td>+  -</td>
+                <td>a + b - c</td>
             </tr>
             <tr>
-                <td>Деление</td>
-                <td>/</td>
-                <td>a / b</td>
+                <td>Умножение / Деление</td>
+                <td>*  /</td>
+                <td>a * b / c</td>
             </tr>
             <tr>
                 <td>Степень</td>
                 <td>**</td>
-                <td>a**2</td>
+                <td>a**2  или  a**0.5</td>
             </tr>
             <tr>
                 <td>Скобки</td>
@@ -972,7 +1043,48 @@ class CustomFormulaTab(QWidget):
                 <td>EF_CO2_y</td>
             </tr>
         </table>
-        
+
+        <h3>📐 Математические функции</h3>
+        <table border="1" cellpadding="5" style="border-collapse: collapse;">
+            <tr bgcolor="#e0f0ff">
+                <th>Функция</th>
+                <th>Описание</th>
+                <th>Пример</th>
+            </tr>
+            <tr>
+                <td>sqrt(x)</td>
+                <td>Квадратный корень</td>
+                <td>sqrt(16) = 4</td>
+            </tr>
+            <tr>
+                <td>exp(x)</td>
+                <td>Экспонента (e^x)</td>
+                <td>exp(1) = 2.718</td>
+            </tr>
+            <tr>
+                <td>log(x)</td>
+                <td>Натуральный логарифм</td>
+                <td>log(2.718) = 1</td>
+            </tr>
+            <tr>
+                <td>sin(x), cos(x), tan(x)</td>
+                <td>Тригонометрия (радианы)</td>
+                <td>sin(pi/2) = 1</td>
+            </tr>
+            <tr>
+                <td>abs(x)</td>
+                <td>Модуль (абсолютное значение)</td>
+                <td>abs(-5) = 5</td>
+            </tr>
+        </table>
+
+        <h3>🧪 Константы</h3>
+        <ul>
+            <li><b>pi</b> - число Пи (3.14159...)</li>
+            <li><b>E</b> - число Эйлера (2.71828...)</li>
+            <li>Пример: <code>area = pi * r**2</code></li>
+        </ul>
+
         <h3>📊 Блоки суммирования</h3>
         <p>Для расчета суммы: Σ(выражение_j) для j=1..n</p>
         <ol>
@@ -983,15 +1095,27 @@ class CustomFormulaTab(QWidget):
             <li>Заполните значения для каждого элемента</li>
             <li>В основной формуле используйте имя блока (например: Sum_Block_1)</li>
         </ol>
-        
+
         <h3>💡 Примеры формул</h3>
-        <p><b>Пример 1:</b> Простая формула</p>
+        <p><b>Пример 1:</b> Выбросы CO2 от сжигания топлива</p>
         <pre>E_CO2 = FC * EF * OF</pre>
-        
-        <p><b>Пример 2:</b> С блоком суммирования</p>
-        <pre>E_total = Sum_Block_1 + C_const * 3.66</pre>
-        <p>где Sum_Block_1 содержит: FC_j * EF_j * OF_j</p>
-        
+        <p>где FC - расход топлива, EF - коэффициент эмиссии, OF - коэффициент окисления</p>
+
+        <p><b>Пример 2:</b> Выбросы с блоком суммирования</p>
+        <pre>E_total = Sum_Block_1 * 3.66</pre>
+        <p>где Sum_Block_1 содержит: C_j * mass_j (содержание углерода × масса)</p>
+
+        <p><b>Пример 3:</b> Преобразование углерода в CO2</p>
+        <pre>CO2 = C_mass * (44/12)</pre>
+        <p>где 44/12 - молярное соотношение CO2/C</p>
+
+        <p><b>Пример 4:</b> С математическими функциями</p>
+        <pre>decay = initial * exp(-rate * time)</pre>
+        <p>Экспоненциальный распад (например, для метана на свалках)</p>
+
+        <p><b>Пример 5:</b> Площадь круга</p>
+        <pre>area = pi * r**2</pre>
+
         <hr>
         <p><i>Для дополнительной помощи обратитесь к документации проекта.</i></p>
         """
@@ -1002,6 +1126,134 @@ class CustomFormulaTab(QWidget):
         msg_box.setText(help_text)
         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg_box.exec()
+
+    # ==================== МЕТОДЫ СОХРАНЕНИЯ/ЗАГРУЗКИ ====================
+
+    def get_data(self):
+        """
+        Собирает данные из вкладки для сохранения.
+
+        Returns:
+            dict: Словарь с данными вкладки
+        """
+        data = {
+            'fields': {},
+            'result': None
+        }
+
+        # Сохраняем формулу
+        if hasattr(self, 'formula_input'):
+            data['fields']['formula'] = self.formula_input.text()
+
+        # Сохраняем значения простых переменных
+        simple_vars = {}
+        for var_name, (_, line_edit) in self.variable_widgets.items():
+            simple_vars[var_name] = line_edit.text()
+        data['fields']['simple_variables'] = simple_vars
+
+        # Сохраняем блоки суммирования
+        sum_blocks_data = []
+        for block in self.sum_blocks:
+            block_data = {
+                'name': block['name'],
+                'expression': block['expression_input'].text(),
+                'rows': []
+            }
+
+            for row in block['variable_rows']:
+                row_data = {}
+                for var_name, widget in row['inputs'].items():
+                    row_data[var_name] = widget.text()
+                block_data['rows'].append(row_data)
+
+            sum_blocks_data.append(block_data)
+        data['fields']['sum_blocks'] = sum_blocks_data
+
+        # Сохраняем результат
+        if hasattr(self, 'result_display'):
+            data['result'] = self.result_display.toPlainText()
+
+        return data
+
+    def set_data(self, data):
+        """
+        Загружает данные во вкладку.
+
+        Args:
+            data: dict с данными для загрузки
+        """
+        if not isinstance(data, dict):
+            return
+
+        fields_data = data.get('fields', {})
+
+        # Загружаем формулу
+        if 'formula' in fields_data and hasattr(self, 'formula_input'):
+            self.formula_input.setText(str(fields_data['formula']))
+
+        # Загружаем простые переменные
+        simple_vars = fields_data.get('simple_variables', {})
+        for var_name, value in simple_vars.items():
+            if var_name in self.variable_widgets:
+                _, line_edit = self.variable_widgets[var_name]
+                line_edit.setText(str(value) if value else "")
+
+        # Загружаем блоки суммирования
+        # Сначала очищаем существующие блоки
+        for block in self.sum_blocks[:]:
+            self._remove_sum_block(block)
+
+        # Создаем блоки из сохраненных данных
+        sum_blocks_data = fields_data.get('sum_blocks', [])
+        for block_data in sum_blocks_data:
+            block_name = block_data['name']
+            expression = block_data['expression']
+            rows = block_data['rows']
+
+            # Создаем блок суммирования
+            # Извлекаем переменные из выражения
+            variables_in_expr = self.evaluator.extract_variables(expression)
+
+            # Создаем блок
+            block = self._create_sum_block_ui(block_name, expression, variables_in_expr)
+
+            # Генерируем нужное количество строк
+            if rows:
+                num_rows = len(rows)
+                if hasattr(block, 'n_input'):
+                    block['n_input'].setValue(num_rows)
+                    self._generate_sum_block_fields(block)
+
+                # Заполняем значения в строках
+                for idx, row_data in enumerate(rows):
+                    if idx < len(block['variable_rows']):
+                        row = block['variable_rows'][idx]
+                        for var_name, value in row_data.items():
+                            if var_name in row['inputs']:
+                                row['inputs'][var_name].setText(str(value) if value else "")
+
+        # Загружаем результат
+        result = data.get('result')
+        if result and hasattr(self, 'result_display'):
+            self.result_display.setPlainText(str(result))
+
+    def clear_fields(self):
+        """Очищает все поля ввода на вкладке."""
+        # Очищаем формулу
+        if hasattr(self, 'formula_input'):
+            self.formula_input.clear()
+
+        # Очищаем простые переменные
+        for _, (_, line_edit) in self.variable_widgets.items():
+            line_edit.clear()
+
+        # Удаляем все блоки суммирования
+        for block in self.sum_blocks[:]:
+            self._remove_sum_block(block)
+
+        # Очищаем результат
+        if hasattr(self, 'result_display'):
+            self.result_display.clear()
 
 
 # ==================== ТЕСТИРОВАНИЕ ====================

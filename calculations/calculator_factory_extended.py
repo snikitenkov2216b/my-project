@@ -1,8 +1,9 @@
 # calculations/calculator_factory_extended.py
 """
 Расширенная фабрика калькуляторов с поддержкой расчетов поглощения ПГ.
-Оптимизированная версия с ленивым импортом.
+Оптимизированная версия с ленивым импортом и кэшированием.
 """
+from functools import lru_cache
 from data_models_extended import DataService, ExtendedDataService
 
 
@@ -69,8 +70,9 @@ class ExtendedCalculatorFactory:
                 self._absorption_calculators[calculator_type] = calculator_class()
         return self._absorption_calculators.get(calculator_type)
 
+    @lru_cache(maxsize=32)
     def _get_emission_calculator_class(self, category_name: str):
-        """Получить класс калькулятора выбросов с ленивым импортом."""
+        """Получить класс калькулятора выбросов с ленивым импортом и кэшированием."""
         if category_name not in self._EMISSION_CALCULATORS:
             return None
 
@@ -81,8 +83,9 @@ class ExtendedCalculatorFactory:
         except (ImportError, AttributeError):
             return None
 
+    @lru_cache(maxsize=16)
     def _get_absorption_calculator_class(self, calculator_type: str):
-        """Получить класс калькулятора поглощения с ленивым импортом."""
+        """Получить класс калькулятора поглощения с ленивым импортом и кэшированием."""
         if calculator_type not in self._ABSORPTION_CALCULATORS:
             return None
 

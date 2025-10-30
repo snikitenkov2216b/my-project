@@ -11,8 +11,10 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_24 import Category24Calculator
+from ui.tab_data_mixin import TabDataMixin
 
-class Category24Tab(QWidget):
+
+class Category24Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 24 "Выбросы закиси азота из сточных вод".
     """

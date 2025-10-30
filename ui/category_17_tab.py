@@ -21,9 +21,11 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import Qt, QLocale
 
 from calculations.category_17 import Category17Calculator
+from ui.tab_data_mixin import TabDataMixin
 
 
-class Category17Tab(QWidget):
+
+class Category17Tab(TabDataMixin, QWidget):
     """
     Класс виджета-вкладки для Категории 17 "Прочие промышленные процессы".
     """
